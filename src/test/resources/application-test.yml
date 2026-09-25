@@ -7,3 +7,7 @@ logging:
     br.com.vagaviva: INFO
 vagaviva:
   public-base-url: https://vagaviva.test
+  security:
+    bootstrap-admin:
+      email: admin@vagaviva.test
+      password: Admin@Test2026
