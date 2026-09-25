@@ -66,6 +66,10 @@ vagaviva:
     bootstrap-admin:
       email: ${BOOTSTRAP_ADMIN_EMAIL:admin@vagaviva.local}
       password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+  regulation:
+    queue-snapshot-interval: PT5M
+    throughput-window: P30D
+    max-missed-confirmations: 2
   # Dados de demonstração (RF-11): ligados nos perfis local e demo.
   demo:
     enabled: false

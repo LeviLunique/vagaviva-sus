@@ -13,3 +13,7 @@ vagaviva:
       password: Admin@Test2026
   demo:
     users-password: Demo@Test2026
+  regulation:
+    # Nos testes o snapshot é chamado explicitamente; o job não dispara sozinho.
+    queue-snapshot-interval: PT1H
+    queue-snapshot-initial-delay: PT1H
