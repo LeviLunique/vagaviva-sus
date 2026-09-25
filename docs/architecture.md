@@ -122,3 +122,19 @@ sequenceDiagram
 - Eventos de domínio são gravados na mesma transação da mudança (registro de publicação do Spring Modulith — *outbox*) e reentregues em caso de falha.
 - Consistência forte no núcleo (alocação, aceite de oferta) com bloqueio pessimista (`SKIP LOCKED`) e atualização condicional; consistência eventual para notificações e indicadores.
 - Leituras de alto volume (posição pública na fila, indicadores) usam *read models* recalculados/projetados (CQRS leve).
+
+## 6. Variante: perfil demo (apresentação de baixo custo)
+
+Mesma aplicação (a arquitetura de software não muda), infraestrutura diferente — ver [ADR-0012](adr/0012-perfil-demo-ec2-unica.md) e [capacity-planning.md §5](capacity-planning.md).
+
+```mermaid
+flowchart LR
+  u([Usuário]) --> cf[CloudFront]
+  cf -- origem primária: VPC origin --> ec2[EC2 única<br/>API + PostgreSQL via Docker Compose]
+  cf -. origem de contingência .-> wake[Lambda "acordar"<br/>protegida por OAC/SigV4]
+  wake -- liga --> ec2
+  sched[EventBridge Scheduler<br/>a cada 10 min] --> idle[Lambda "ociosidade"]
+  idle -- sem requisições ha 30 min --> ec2
+```
+
+A CloudFront tenta sempre a EC2 primeiro; só chama a Lambda "acordar" quando a origem primária falha (instância desligada). Nenhum IP público é exposto para além da própria CloudFront: o security group da instância só aceita a porta 80 do security group gerenciado pela VPC origin da CloudFront.
