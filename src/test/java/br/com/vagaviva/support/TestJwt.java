@@ -19,10 +19,20 @@ public final class TestJwt {
     }
 
     public static RequestPostProcessor as(Role role, UUID userId) {
+        return as(role, userId, null);
+    }
+
+    /** Profissional vinculado a uma unidade (claim {@code unit_id}), ex.: REQUESTER da UBS. */
+    public static RequestPostProcessor as(Role role, UUID userId, UUID unitId) {
         return jwt()
-                .jwt(token -> token.subject(userId.toString())
-                        .claim(JwtClaims.ROLE, role.name())
-                        .claim(JwtClaims.NAME, "Usuário de teste"))
+                .jwt(token -> {
+                    token.subject(userId.toString())
+                            .claim(JwtClaims.ROLE, role.name())
+                            .claim(JwtClaims.NAME, "Usuário de teste");
+                    if (unitId != null) {
+                        token.claim(JwtClaims.UNIT_ID, unitId.toString());
+                    }
+                })
                 .authorities(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 }

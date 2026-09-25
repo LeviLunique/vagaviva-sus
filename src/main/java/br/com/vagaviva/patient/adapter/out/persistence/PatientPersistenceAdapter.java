@@ -5,6 +5,8 @@ import br.com.vagaviva.patient.domain.Cns;
 import br.com.vagaviva.patient.domain.Cpf;
 import br.com.vagaviva.patient.domain.Patient;
 import br.com.vagaviva.shared.domain.ConflictException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -42,6 +44,11 @@ class PatientPersistenceAdapter implements PatientRepository {
     @Override
     public Optional<Patient> findById(UUID id) {
         return repository.findById(id).map(PatientEntity::toDomain);
+    }
+
+    @Override
+    public List<Patient> findAllById(Collection<UUID> ids) {
+        return repository.findAllById(ids).stream().map(PatientEntity::toDomain).toList();
     }
 
     @Override

@@ -52,6 +52,8 @@ class PatientPersistenceAdapterIT {
             assertThat(p.socialName()).isEqualTo("Joana");
             assertThat(p.version()).isZero();
         });
+        assertThat(repository.findAllById(java.util.List.of(saved.id(), java.util.UUID.randomUUID())))
+                .extracting(Patient::id).containsExactly(saved.id());
         assertThat(repository.findByCns(cns)).isPresent();
         assertThat(repository.findByCpf(cpf)).isPresent();
         assertThat(repository.existsByCns(cns)).isTrue();

@@ -5,7 +5,11 @@ import br.com.vagaviva.patient.PatientSummary;
 import br.com.vagaviva.patient.application.port.out.PatientRepository;
 import br.com.vagaviva.patient.domain.Patient;
 import java.time.Clock;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +32,18 @@ class PatientApiImpl implements PatientApi {
         return repository.findById(patientId).map(this::summary);
     }
 
+    @Override
+    public Map<UUID, PatientSummary> findSummaries(Collection<UUID> patientIds) {
+        if (patientIds.isEmpty()) {
+            return Map.of();
+        }
+        return repository.findAllById(patientIds).stream()
+                .map(this::summary)
+                .collect(Collectors.toMap(PatientSummary::id, Function.identity()));
+    }
+
     private PatientSummary summary(Patient patient) {
-        return new PatientSummary(patient.id(), patient.firstName(), patient.birthDate(),
+        return new PatientSummary(patient.id(), patient.firstName(), patient.cns().masked(), patient.birthDate(),
                 patient.municipalityCode().value(), patient.phone().value(), patient.preferredChannel(),
                 patient.whatsappOptIn(), patient.isPriorityGroup(clock), patient.isActive());
     }
