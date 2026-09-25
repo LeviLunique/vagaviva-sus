@@ -173,10 +173,12 @@ data "aws_iam_policy_document" "deploy_trust" {
       values   = ["sts.amazonaws.com"]
     }
     # Somente jobs do repositório vinculados ao Environment correspondente do GitHub.
+    # O GitHub emite o "subject imutável" (inclui os IDs numéricos do dono e do repositório),
+    # o que impede que um repositório recriado com o mesmo nome herde o acesso.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_owner}/${var.github_repo}:environment:${each.key}"]
+      values   = ["repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:environment:${each.key}"]
     }
   }
 }

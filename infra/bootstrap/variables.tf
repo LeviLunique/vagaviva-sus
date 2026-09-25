@@ -20,6 +20,18 @@ variable "github_repo" {
   default = "vagaviva-sus"
 }
 
+variable "github_owner_id" {
+  description = "ID numérico do dono no GitHub (gh api users/<owner> --jq .id)."
+  type        = string
+  default     = "17887087"
+}
+
+variable "github_repo_id" {
+  description = "ID numérico do repositório (gh api repos/<owner>/<repo> --jq .id)."
+  type        = string
+  default     = "1386619867"
+}
+
 variable "environments" {
   description = "Ambientes que recebem role de deploy (devem existir como Environments no GitHub)."
   type        = list(string)
