@@ -4,6 +4,7 @@ import br.com.vagaviva.regulation.application.port.in.QueueSnapshotUseCase;
 import br.com.vagaviva.regulation.application.port.out.QueueSnapshotRepository;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,8 @@ class QueueSnapshotService implements QueueSnapshotUseCase {
     @Override
     @Transactional
     public SnapshotResult refresh() {
-        Instant now = clock.instant();
+        // Precisão do timestamptz (µs): o horário devolvido é idêntico ao gravado e lido depois.
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         int windowDays = (int) Math.max(1, properties.throughputWindow().toDays());
         int queued = snapshots.rebuild(now, now.minus(properties.throughputWindow()), windowDays);
         log.info("Snapshot da fila recalculado: {} encaminhamento(s) aguardando.", queued);

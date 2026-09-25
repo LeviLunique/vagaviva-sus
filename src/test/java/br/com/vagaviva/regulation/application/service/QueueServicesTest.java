@@ -125,6 +125,18 @@ class QueueServicesTest {
     }
 
     @Test
+    @DisplayName("horário do snapshot na precisão do banco (µs): relógio com nanossegundos não gera divergência")
+    void shouldTruncateSnapshotTimeToDatabasePrecision() {
+        Instant withNanos = Instant.parse("2026-09-25T20:26:00.874947287Z");
+        Instant micros = Instant.parse("2026-09-25T20:26:00.874947Z");
+        when(snapshots.rebuild(micros, micros.minus(Duration.ofDays(30)), 30)).thenReturn(0);
+
+        var result = new QueueSnapshotService(snapshots, PROPERTIES, Clock.fixed(withNanos, ZoneId.of("UTC"))).refresh();
+
+        assertThat(result.snapshotAt()).isEqualTo(micros);
+    }
+
+    @Test
     @DisplayName("RN-07/08: o snapshot usa a janela de vazão configurada (30 dias)")
     void shouldRefreshSnapshotWithThroughputWindow() {
         when(snapshots.rebuild(NOW, NOW.minus(Duration.ofDays(30)), 30)).thenReturn(5);
