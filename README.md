@@ -113,6 +113,14 @@ Base `/api/v1`. Implementados até o momento:
 | GET | `/api/v1/patients/{id}` | Consultar paciente (CNS/CPF mascarados; leitura auditada) — REQUESTER, REGULATOR, ADMIN |
 | POST | `/api/v1/patients/search` | Buscar por CNS **ou** CPF no corpo (nunca na URL) — REQUESTER, REGULATOR, ADMIN |
 | PATCH | `/api/v1/patients/{id}/contact` | Atualizar telefone, canal preferido e aceite do WhatsApp — REQUESTER, ADMIN |
+| POST · GET | `/api/v1/referrals` | Encaminhar (REQUESTER; gera protocolo `VV-AAAA-NNNNNNN`) e listar (REQUESTER vê só a própria unidade) |
+| GET · PUT | `/api/v1/referrals/{id}` | Consultar (leitura auditada) e reenviar encaminhamento devolvido (REQUESTER) |
+| POST | `/api/v1/referrals/{id}/regulation` | Aprovar com classe de risco ou devolver com justificativa — REGULATOR |
+| POST | `/api/v1/referrals/{id}/cancel` | Cancelamento administrativo — REGULATOR, ADMIN |
+| GET | `/api/v1/queues/{specialtyId}` | Fila priorizada (risco → grupo prioritário → data de entrada), paciente mascarado — REGULATOR, MANAGER, ADMIN |
+| POST | `/api/v1/queues/snapshot` | Recalcular agora o snapshot da transparência (automático a cada 5 min) — ADMIN |
+| POST | `/api/v1/public/queue-position` | **Público**: posição na fila por protocolo + data de nascimento (no corpo) |
+| GET | `/api/v1/public/queue-stats` | **Público**: aguardando por classe de risco, espera média e vazão por especialidade |
 
 ### Autenticação
 ```bash
@@ -130,7 +138,7 @@ Módulos do MVP e status de entrega:
 |---|---|---|
 | Identidade e auditoria | `/auth/login`, `/auth/me`, `/users`, `/audit-events` | ✅ |
 | Cadastros | `/health-units`, `/specialties`, `/patients` | ✅ |
-| Regulação e transparência | `/referrals`, `/queues/{specialtyId}`, `/public/queue-position`, `/public/queue-stats` | ⏳ |
+| Regulação e transparência | `/referrals`, `/queues/{specialtyId}`, `/public/queue-position`, `/public/queue-stats` | ✅ |
 | Agenda e alocação | `/slots`, `/allocation-runs`, `/appointments` (check-in, falta) | ⏳ |
 | Confirmação ativa | `/patient-actions/{token}` (confirmar, cancelar, desistir), `/p/{token}`, `/notifications` | ⏳ |
 | Reaproveitamento de vagas | `/patient-actions/{token}/accept-offer`, `/slot-offers` | ⏳ |
