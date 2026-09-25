@@ -139,6 +139,42 @@
     {
       "key": "protocol",
       "value": ""
+    },
+    {
+      "key": "slotStart1",
+      "value": ""
+    },
+    {
+      "key": "slotStart2",
+      "value": ""
+    },
+    {
+      "key": "slotOverlap",
+      "value": ""
+    },
+    {
+      "key": "slotPast",
+      "value": ""
+    },
+    {
+      "key": "appointmentLookupAttempts",
+      "value": ""
+    },
+    {
+      "key": "schedulerUnitId",
+      "value": ""
+    },
+    {
+      "key": "slotId1",
+      "value": ""
+    },
+    {
+      "key": "slotId2",
+      "value": ""
+    },
+    {
+      "key": "appointmentId",
+      "value": ""
     }
   ],
   "item": [
@@ -5020,6 +5056,1171 @@
               ]
             },
             "description": "RN-25: criação, regulação e leitura registradas.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Agenda e alocação",
+      "description": "F4 — publicação de agenda (RF-19), alocação automática da fila (RF-20), agenda e agendamentos da unidade (RF-21), comparecimento (RF-22) e cancelamento pela unidade (RF-23). Usa o paciente que a pasta 03 deixa na fila (rodar a coleção em ordem).",
+      "item": [
+        {
+          "name": "Login ADMIN",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const base = new Date(Date.now() + 7 * 24 * 3600 * 1000); base.setUTCMinutes(0, 0, 0);",
+                  "pm.collectionVariables.set('slotStart1', base.toISOString());",
+                  "pm.collectionVariables.set('slotStart2', new Date(base.getTime() + 3600 * 1000).toISOString());",
+                  "pm.collectionVariables.set('slotOverlap', new Date(base.getTime() + 15 * 60 * 1000).toISOString());",
+                  "pm.collectionVariables.set('slotPast', new Date(Date.now() - 3600 * 1000).toISOString());",
+                  "pm.collectionVariables.set('appointmentLookupAttempts', '0');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('tokenAdmin', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Horários das vagas calculados a cada execução (≥ 7 dias à frente).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login SCHEDULER (demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('papel SCHEDULER', () => pm.expect(pm.response.json().user.role).to.eql('SCHEDULER'));",
+                  "pm.collectionVariables.set('tokenScheduler', pm.response.json().accessToken);",
+                  "pm.collectionVariables.set('schedulerUnitId', pm.response.json().user.healthUnitId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Salva `tokenScheduler`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"scheduler@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login REGULATOR (demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('papel REGULATOR', () => pm.expect(pm.response.json().user.role).to.eql('REGULATOR'));",
+                  "pm.collectionVariables.set('tokenRegulator', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Salva `tokenRegulator`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"regulator@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login REQUESTER (demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('papel REQUESTER', () => pm.expect(pm.response.json().user.role).to.eql('REQUESTER'));",
+                  "pm.collectionVariables.set('tokenRequester', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Salva `tokenRequester`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"requester@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Paciente da F3 aguardando na fila",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('encaminhamento na fila', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/referrals/{{referralId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "referrals",
+                "{{referralId}}"
+              ]
+            },
+            "description": "Pré-condição: a pasta 03 deixou o paciente idoso WAITING na especialidade da execução.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenRegulator}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publicar vagas (≥ 7 dias)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const slots = pm.response.json();",
+                  "pm.test('duas vagas disponíveis', () => { pm.expect(slots.length).to.eql(2); slots.forEach(s => pm.expect(s.status).to.eql('AVAILABLE')); });",
+                  "pm.collectionVariables.set('slotId1', slots[0].id);",
+                  "pm.collectionVariables.set('slotId2', slots[1].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "slots"
+              ]
+            },
+            "description": "RF-19: com ≥ 5 dias a vaga entra na alocação regular — que dispara sozinha após a publicação.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitId\": \"{{schedulerUnitId}}\",\n  \"specialtyId\": \"{{queueSpecialtyId}}\",\n  \"professionalName\": \"Dra. Newman {{runId}}\",\n  \"slots\": [\n    {\n      \"startAt\": \"{{slotStart1}}\",\n      \"durationMinutes\": 30\n    },\n    {\n      \"startAt\": \"{{slotStart2}}\",\n      \"durationMinutes\": 30\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Vaga no passado → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('code SLOT_IN_PAST', () => pm.expect(pm.response.json().code).to.eql('SLOT_IN_PAST'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "slots"
+              ]
+            },
+            "description": "RF-19 CA1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitId\": \"{{schedulerUnitId}}\",\n  \"specialtyId\": \"{{queueSpecialtyId}}\",\n  \"professionalName\": \"Dra. Newman {{runId}}\",\n  \"slots\": [\n    {\n      \"startAt\": \"{{slotPast}}\",\n      \"durationMinutes\": 30\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Vaga sobreposta → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('code SLOT_OVERLAP', () => pm.expect(pm.response.json().code).to.eql('SLOT_OVERLAP'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "slots"
+              ]
+            },
+            "description": "RF-19 CA1: o mesmo profissional já atende nesse horário.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitId\": \"{{schedulerUnitId}}\",\n  \"specialtyId\": \"{{queueSpecialtyId}}\",\n  \"professionalName\": \"Dra. Newman {{runId}}\",\n  \"slots\": [\n    {\n      \"startAt\": \"{{slotOverlap}}\",\n      \"durationMinutes\": 30\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publicar em outra unidade → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('code SCHEDULING_OUT_OF_UNIT', () => pm.expect(pm.response.json().code).to.eql('SCHEDULING_OUT_OF_UNIT'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "slots"
+              ]
+            },
+            "description": "RN-03: SCHEDULER só publica na própria unidade (aqui, a Policlínica Guarulhos do seed).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitId\": \"0199c0de-0000-7000-8000-000000000202\",\n  \"specialtyId\": \"{{queueSpecialtyId}}\",\n  \"professionalName\": \"Dr. Outro {{runId}}\",\n  \"slots\": [\n    {\n      \"startAt\": \"{{slotStart1}}\",\n      \"durationMinutes\": 30\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Disparar alocação agora",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('resultado da execução', () => ['examinedSlots','allocated','withoutCandidate'].forEach(k => pm.expect(r).to.have.property(k)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/allocation-runs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "allocation-runs"
+              ]
+            },
+            "description": "RF-20: também roda a cada 5 min e após cada publicação.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Agendamento criado para o paciente da F3",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// espera curta entre tentativas (a alocação do evento roda em outra thread)",
+                  "if (Number(pm.collectionVariables.get('appointmentLookupAttempts')) > 0) { setTimeout(() => {}, 1500); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const attempts = Number(pm.collectionVariables.get('appointmentLookupAttempts'));",
+                  "const found = pm.response.json().content.find(a => a.referralId === pm.collectionVariables.get('referralId'));",
+                  "if (!found && attempts < 5) {",
+                  "  pm.collectionVariables.set('appointmentLookupAttempts', String(attempts + 1));",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "  return;",
+                  "}",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('agendamento do paciente da fila', () => pm.expect(found).to.not.be.undefined);",
+                  "pm.test('aguardando confirmação', () => pm.expect(found.status).to.eql('PENDING_CONFIRMATION'));",
+                  "pm.test('na primeira vaga publicada', () => pm.expect(found.slotId).to.eql(pm.collectionVariables.get('slotId1')));",
+                  "pm.test('prazo de confirmação antes do atendimento (D-3)', () => { const deadline = new Date(found.confirmationDeadline); const start = new Date(found.startAt); pm.expect(start - deadline).to.be.above(2 * 24 * 3600 * 1000); });",
+                  "pm.test('paciente identificado só por primeiro nome e CNS mascarado', () => pm.expect(found.patientCnsMasked).to.match(/^\\*{11}\\d{4}$/));",
+                  "pm.collectionVariables.set('appointmentId', found.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments?unitId={{schedulerUnitId}}&status=PENDING_CONFIRMATION&size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "unitId",
+                  "value": "{{schedulerUnitId}}"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING_CONFIRMATION"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "RF-20/RN-11: aguardando confirmação, com prazo D-3 23h59. A alocação pode ter sido feita pelo evento de publicação (assíncrona): tenta de novo até 5 vezes.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Consultar agendamento (REGULATOR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('origem REGULAR', () => pm.expect(pm.response.json().origin).to.eql('REGULAR'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointmentId}}"
+              ]
+            },
+            "description": "Leitura auditada.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenRegulator}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Encaminhamento agendado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('SCHEDULED', () => pm.expect(pm.response.json().status).to.eql('SCHEDULED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/referrals/{{referralId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "referrals",
+                "{{referralId}}"
+              ]
+            },
+            "description": "A fila marcou o encaminhamento como SCHEDULED.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenRegulator}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Agenda da unidade",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const slots = pm.response.json().content;",
+                  "const first = slots.find(s => s.id === pm.collectionVariables.get('slotId1'));",
+                  "const second = slots.find(s => s.id === pm.collectionVariables.get('slotId2'));",
+                  "pm.test('1ª vaga ALLOCATED', () => pm.expect(first.status).to.eql('ALLOCATED'));",
+                  "pm.test('2ª vaga AVAILABLE', () => pm.expect(second.status).to.eql('AVAILABLE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/slots?specialtyId={{queueSpecialtyId}}&size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "specialtyId",
+                  "value": "{{queueSpecialtyId}}"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "RF-21: a 1ª vaga alocada, a 2ª ainda disponível (só havia um paciente na fila).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Check-in antes do dia → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('code CHECK_IN_OUTSIDE_DAY', () => pm.expect(pm.response.json().code).to.eql('CHECK_IN_OUTSIDE_DAY'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentId}}/check-in",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointmentId}}",
+                "check-in"
+              ]
+            },
+            "description": "RN-19: check-in só no dia do atendimento.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Falta antes do início → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('code NO_SHOW_BEFORE_START', () => pm.expect(pm.response.json().code).to.eql('NO_SHOW_BEFORE_START'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentId}}/no-show",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointmentId}}",
+                "no-show"
+              ]
+            },
+            "description": "RN-19: falta só após o horário de início.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Agendamentos com REQUESTER → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                  "pm.test('code ACCESS_DENIED', () => pm.expect(pm.response.json().code).to.eql('ACCESS_DENIED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments"
+              ]
+            },
+            "description": "Agenda é da unidade executante e da regulação.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenRequester}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancelar a vaga agendada (unidade)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('vaga cancelada', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/slots/{{slotId1}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "slots",
+                "{{slotId1}}",
+                "cancel"
+              ]
+            },
+            "description": "RF-23: o agendamento vira CANCELLED_BY_UNIT e o paciente volta à fila na mesma posição.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Profissional afastado.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenScheduler}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Paciente de volta à fila",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('WAITING de novo', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/referrals/{{referralId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "referrals",
+                "{{referralId}}"
+              ]
+            },
+            "description": "Mesma data de entrada (motivo não imputável ao paciente).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenRegulator}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Agendamento cancelado pela unidade",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CANCELLED_BY_UNIT', () => pm.expect(pm.response.json().status).to.eql('CANCELLED_BY_UNIT'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointmentId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Auditoria do agendamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const actions = pm.response.json().content.map(e => e.action);",
+                  "pm.test('agendado, lido e cancelado pela unidade', () => ['APPOINTMENT_SCHEDULED','APPOINTMENT_READ','APPOINTMENT_CANCELLED_BY_UNIT'].forEach(a => pm.expect(actions).to.include(a)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/audit-events?resourceType=APPOINTMENT&resourceId={{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "audit-events"
+              ],
+              "query": [
+                {
+                  "key": "resourceType",
+                  "value": "APPOINTMENT"
+                },
+                {
+                  "key": "resourceId",
+                  "value": "{{appointmentId}}"
+                }
+              ]
+            },
+            "description": "RN-25: alocação, leitura e cancelamento registrados.",
             "auth": {
               "type": "bearer",
               "bearer": [
