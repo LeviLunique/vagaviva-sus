@@ -1,0 +1,49 @@
+# Build
+target/
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+out/
+
+# Ambiente e credenciais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+backend.hcl
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Node (Newman via npx)
+node_modules/
