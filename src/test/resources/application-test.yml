@@ -11,3 +11,5 @@ vagaviva:
     bootstrap-admin:
       email: admin@vagaviva.test
       password: Admin@Test2026
+  demo:
+    users-password: Demo@Test2026

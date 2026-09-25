@@ -66,3 +66,7 @@ vagaviva:
     bootstrap-admin:
       email: ${BOOTSTRAP_ADMIN_EMAIL:admin@vagaviva.local}
       password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+  # Dados de demonstração (RF-11): ligados nos perfis local e demo.
+  demo:
+    enabled: false
+    users-password: ${DEMO_USERS_PASSWORD:}
