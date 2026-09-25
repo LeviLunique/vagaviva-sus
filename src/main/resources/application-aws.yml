@@ -1,0 +1,8 @@
+# Perfil usado nas tasks ECS (hml/prod). Logs em JSON para o CloudWatch Logs Insights.
+logging:
+  structured:
+    format:
+      console: ecs
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}?sslmode=require
