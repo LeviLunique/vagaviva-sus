@@ -17,3 +17,7 @@ vagaviva:
     # Nos testes o snapshot é chamado explicitamente; o job não dispara sozinho.
     queue-snapshot-interval: PT1H
     queue-snapshot-initial-delay: PT1H
+  scheduling:
+    # Nos testes a alocação é chamada explicitamente (ou pelo evento de publicação).
+    allocation-interval: PT1H
+    allocation-initial-delay: PT1H
