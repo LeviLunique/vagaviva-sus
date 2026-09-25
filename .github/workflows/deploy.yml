@@ -83,4 +83,6 @@ jobs:
         env:
           POSTMAN_ENV: hml
           BASE_URL: ${{ vars.APP_BASE_URL }}
+          BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+          DEMO_USERS_PASSWORD: ${{ secrets.DEMO_USERS_PASSWORD }}
         run: ./scripts/run-postman.sh
