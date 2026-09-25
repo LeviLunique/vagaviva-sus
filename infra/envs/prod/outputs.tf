@@ -1,0 +1,13 @@
+output "api_base_url" { value = module.stack.api_base_url }
+output "cloudfront_distribution_id" { value = module.stack.cloudfront_distribution_id }
+output "ecs_cluster" { value = module.stack.ecs_cluster }
+output "ecs_service" { value = module.stack.ecs_service }
+output "db_endpoint" { value = module.stack.db_endpoint }
+output "db_secret_arn" { value = module.stack.db_secret_arn }
+output "app_secret_arn" { value = module.stack.app_secret_arn }
+output "notifications_queue_url" { value = module.stack.notifications_queue_url }
+output "notifications_dlq_url" { value = module.stack.notifications_dlq_url }
+output "image_tag_parameter" { value = module.stack.image_tag_parameter }
+output "log_group" { value = module.stack.log_group }
+output "alarms_topic_arn" { value = module.stack.alarms_topic_arn }
+output "dashboard_url" { value = module.stack.dashboard_url }
