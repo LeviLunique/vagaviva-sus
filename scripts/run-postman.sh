@@ -14,6 +14,10 @@ REPORT_DIR="target/newman"
 NEWMAN_VERSION="${NEWMAN_VERSION:-6.1.3}"
 
 cd "$ROOT_DIR"
+# Carrega o .env local (se existir) para obter as senhas de demonstração sem versioná-las.
+if [[ -f .env && "$POSTMAN_ENV" == "local" ]]; then
+  set -a; source .env; set +a
+fi
 [[ -f "$COLLECTION" ]] || { echo "Coleção não encontrada: $COLLECTION" >&2; exit 1; }
 [[ -f "$ENVIRONMENT" ]] || { echo "Ambiente não encontrado: $ENVIRONMENT" >&2; exit 1; }
 mkdir -p "$REPORT_DIR"
@@ -25,6 +29,8 @@ if [[ -n "${BASE_URL:-}" ]]; then
   echo "→ BASE_URL override: $BASE_URL"
   ARGS+=(--env-var "baseUrl=$BASE_URL")
 fi
+[[ -n "${BOOTSTRAP_ADMIN_PASSWORD:-}" ]] && ARGS+=(--env-var "adminPassword=$BOOTSTRAP_ADMIN_PASSWORD")
+[[ -n "${DEMO_USERS_PASSWORD:-}" ]] && ARGS+=(--env-var "demoPassword=$DEMO_USERS_PASSWORD")
 ARGS+=("$@")
 
 if [[ "${NEWMAN_RUNNER:-auto}" != "docker" ]] && command -v npx >/dev/null 2>&1; then
