@@ -1,0 +1,65 @@
+#!/bin/bash
+# Executado uma vez no primeiro boot (cloud-init). Instala Docker e o serviço systemd que,
+# a cada boot (inclusive quando a Lambda de "acordar" religa a instância), busca os segredos
+# e a tag de imagem mais recentes no SSM/Secrets Manager e sobe a aplicação com Docker Compose.
+set -euxo pipefail
+
+dnf install -y docker
+systemctl enable --now docker
+
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -fsSL "https://github.com/docker/compose/releases/download/${docker_compose_version}/docker-compose-linux-aarch64" \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+mkdir -p /opt/vagaviva
+cat > /opt/vagaviva/docker-compose.yml <<'COMPOSE_EOF'
+${docker_compose_content}
+COMPOSE_EOF
+
+cat > /opt/vagaviva/refresh.sh <<'REFRESH_EOF'
+#!/bin/bash
+# Roda a cada boot: busca a imagem/segredos mais recentes e (re)inicia a aplicação.
+set -euo pipefail
+export AWS_DEFAULT_REGION="${region}"
+cd /opt/vagaviva
+
+aws ecr get-login-password | docker login --username AWS --password-stdin "${ecr_registry}"
+
+IMAGE_TAG="$(aws ssm get-parameter --name '${image_tag_parameter}' --query Parameter.Value --output text)"
+export APP_IMAGE="${ecr_registry}/${ecr_repository_name}:$IMAGE_TAG"
+
+APP_JSON="$(aws secretsmanager get-secret-value --secret-id '${app_secret_arn}' --query SecretString --output text)"
+DB_JSON="$(aws secretsmanager get-secret-value --secret-id '${db_secret_arn}' --query SecretString --output text)"
+export JWT_PRIVATE_KEY="$(echo "$APP_JSON" | jq -r .JWT_PRIVATE_KEY)"
+export BOOTSTRAP_ADMIN_PASSWORD="$(echo "$APP_JSON" | jq -r .BOOTSTRAP_ADMIN_PASSWORD)"
+export DEMO_USERS_PASSWORD="$(echo "$APP_JSON" | jq -r .DEMO_USERS_PASSWORD)"
+export DB_PASSWORD="$(echo "$DB_JSON" | jq -r .password)"
+export PUBLIC_BASE_URL="$(aws ssm get-parameter --name '${public_base_url_parameter}' --query Parameter.Value --output text)"
+
+docker compose pull
+docker compose up -d --remove-orphans
+REFRESH_EOF
+chmod +x /opt/vagaviva/refresh.sh
+
+dnf install -y jq
+
+cat > /etc/systemd/system/vagaviva-demo.service <<'UNIT_EOF'
+[Unit]
+Description=VagaViva (perfil demo) - sobe a aplicacao via Docker Compose
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/vagaviva/refresh.sh
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
+UNIT_EOF
+
+systemctl daemon-reload
+systemctl enable --now vagaviva-demo.service

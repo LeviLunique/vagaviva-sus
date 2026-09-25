@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: vagaviva-demo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vagaviva
+      POSTGRES_USER: vagaviva
+      POSTGRES_PASSWORD: $${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vagaviva -d vagaviva"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${region}
+        awslogs-group: ${log_group_name}
+        awslogs-create-group: "true"
+        awslogs-stream: db
+
+  app:
+    image: $${APP_IMAGE}
+    container_name: vagaviva-demo-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${spring_profiles}
+      VAGAVIVA_ENVIRONMENT: demo
+      AWS_REGION: ${region}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: vagaviva
+      DB_USER: vagaviva
+      DB_PASSWORD: $${DB_PASSWORD}
+      SQS_NOTIFICATIONS_QUEUE: ${notifications_queue_name}
+      PUBLIC_BASE_URL: $${PUBLIC_BASE_URL}
+      JWT_PRIVATE_KEY: $${JWT_PRIVATE_KEY}
+      BOOTSTRAP_ADMIN_PASSWORD: $${BOOTSTRAP_ADMIN_PASSWORD}
+      DEMO_USERS_PASSWORD: $${DEMO_USERS_PASSWORD}
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
+    ports:
+      - "80:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health/liveness >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${region}
+        awslogs-group: ${log_group_name}
+        awslogs-create-group: "true"
+        awslogs-stream: app
+
+volumes:
+  pgdata:

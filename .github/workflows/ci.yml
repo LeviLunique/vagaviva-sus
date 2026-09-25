@@ -106,7 +106,7 @@ jobs:
 
       - name: Validação dos stacks
         run: |
-          for stack in infra/bootstrap infra/envs/hml infra/envs/prod; do
+          for stack in infra/bootstrap infra/envs/hml infra/envs/prod infra/envs/demo; do
             echo "::group::$stack"
             terraform -chdir="$stack" init -backend=false -input=false
             terraform -chdir="$stack" validate
