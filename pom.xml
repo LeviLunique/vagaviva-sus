@@ -23,6 +23,7 @@
         <spring-modulith.version>2.1.1</spring-modulith.version>
         <springdoc.version>3.1.1</springdoc.version>
         <archunit.version>1.5.0</archunit.version>
+        <shedlock.version>7.10.1</shedlock.version>
         <jacoco.version>0.8.15</jacoco.version>
         <!-- Gate de cobertura (linhas e branches) aplicado no `mvn verify` -->
         <coverage.line.minimum>0.80</coverage.line.minimum>
@@ -62,6 +63,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+        </dependency>
 
         <!-- Persistência -->
         <dependency>
@@ -86,6 +91,18 @@
         <dependency>
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-starter-core</artifactId>
+        </dependency>
+
+        <!-- Jobs agendados executados uma única vez no cluster -->
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>${shedlock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-jdbc-template</artifactId>
+            <version>${shedlock.version}</version>
         </dependency>
 
         <!-- Operação -->

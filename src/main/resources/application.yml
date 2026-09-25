@@ -50,6 +50,19 @@ springdoc:
     path: /swagger-ui.html
 
 vagaviva:
+  time-zone: America/Sao_Paulo
   public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
   api:
     version: v1
+  security:
+    jwt:
+      issuer: vagaviva
+      ttl: PT60M
+      # Base64 de um PEM PKCS#8 (obrigatória no perfil aws; local/testes geram um par efêmero)
+      private-key: ${JWT_PRIVATE_KEY:}
+    login:
+      max-attempts: 5
+      lock-duration: PT15M
+    bootstrap-admin:
+      email: ${BOOTSTRAP_ADMIN_EMAIL:admin@vagaviva.local}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:}

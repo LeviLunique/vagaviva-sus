@@ -21,7 +21,8 @@ O VagaViva fecha o circuito **agendar → confirmar → reaproveitar** e entrega
 ## Stack e requisitos
 
 - Java 25, Maven 3.9+ (wrapper incluso)
-- Spring Boot 4.1 (Web MVC, Security, Data JPA, Validation, Actuator) + Spring Modulith 2.1
+- Spring Boot 4.1 (Web MVC, Security + OAuth2 Resource Server com JWT RS256, Data JPA, Validation, Actuator) + Spring Modulith 2.1
+- ShedLock (jobs agendados executados uma única vez entre instâncias)
 - PostgreSQL 17 + Flyway
 - Amazon SQS (local: ElasticMQ) para notificações
 - Docker / Docker Compose (execução recomendada)
@@ -80,6 +81,9 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 25)"
 | `SERVER_PORT` | `8080` | porta HTTP |
 | `PUBLIC_BASE_URL` | `http://localhost:8080` | URL pública anunciada no Swagger (em AWS, a URL da CloudFront) |
 | `SPRING_PROFILES_ACTIVE` | `local` | `local`, `aws`, `demo` |
+| `JWT_PRIVATE_KEY` | vazio (par efêmero) | chave RS256 dos tokens — Base64 de um PEM PKCS#8; obrigatória no perfil `aws` |
+| `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | `admin@vagaviva.local`, `Admin@Local2026` | administrador criado no primeiro start sem ADMIN |
+| `DEMO_USERS_PASSWORD` | `Demo@Local2026` | senha dos usuários de demonstração e dos criados pela coleção Postman |
 | `SQS_ENDPOINT` | `http://localhost:9324` | SQS local (ElasticMQ) |
 | `AWS_REGION` | `sa-east-1` | região AWS |
 
@@ -94,12 +98,26 @@ Base `/api/v1`. Implementados até o momento:
 | GET | `/` | Índice da API (nome, versão e links de descoberta) |
 | GET | `/actuator/health` | Health check (liveness/readiness) |
 | GET | `/v3/api-docs` · `/swagger-ui.html` | Contrato OpenAPI e Swagger UI (local, hml e demo; desligados em produção) |
+| POST | `/api/v1/auth/login` | Login (público) → JWT de 60 min; 5 falhas seguidas bloqueiam por 15 min |
+| GET | `/api/v1/auth/me` | Perfil do usuário autenticado |
+| POST · GET | `/api/v1/users` | Cadastrar e listar profissionais (filtros `role`, `active`) — ADMIN |
+| GET | `/api/v1/users/{id}` | Consultar profissional — ADMIN |
+| PATCH | `/api/v1/users/{id}/status` | Ativar/desativar profissional — ADMIN |
+| GET | `/api/v1/audit-events` | Trilha de auditoria paginada (filtros `resourceType`, `resourceId`, `actorId`, `from`, `to`) — ADMIN |
+
+### Autenticação
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@vagaviva.local","password":"Admin@Local2026"}'
+```
+Envie o `accessToken` no header `Authorization: Bearer <token>` (no Swagger, botão **Authorize**). Papéis: `ADMIN`, `REQUESTER` e `SCHEDULER` (vinculados a uma unidade de saúde), `REGULATOR` e `MANAGER`. Erros seguem a RFC 9457 (`application/problem+json`) com `code` estável, ex.: `INVALID_CREDENTIALS`, `EMAIL_ALREADY_REGISTERED`, `WEAK_PASSWORD`, `ACCESS_DENIED`.
 
 Módulos do MVP e status de entrega:
 
 | Módulo | Principais recursos | Status |
 |---|---|---|
-| Identidade e auditoria | `/auth/login`, `/auth/me`, `/users`, `/audit-events` | ⏳ |
+| Identidade e auditoria | `/auth/login`, `/auth/me`, `/users`, `/audit-events` | ✅ |
 | Cadastros | `/health-units`, `/specialties`, `/patients` | ⏳ |
 | Regulação e transparência | `/referrals`, `/queues/{specialtyId}`, `/public/queue-position`, `/public/queue-stats` | ⏳ |
 | Agenda e alocação | `/slots`, `/allocation-runs`, `/appointments` (check-in, falta) | ⏳ |
@@ -115,7 +133,9 @@ Módulos do MVP e status de entrega:
 Habilitado nos ambientes local, homologação e demo; **desligado em produção** (perfil `aws` puro) para reduzir a superfície de ataque. A documentação interativa fica em `/swagger-ui.html`, com exemplos de requisição e das respostas de sucesso e erro (`application/problem+json`, RFC 9457).
 
 ## Postman
-Coleção em `postman/vagaviva-api.postman_collection.json` e ambientes `postman/vagaviva-local.postman_environment.json` / `vagaviva-hml.postman_environment.json`. As pastas seguem a ordem do fluxo de negócio e cada request tem testes automatizados.
+Coleção em `postman/vagaviva-api.postman_collection.json` e ambientes `postman/vagaviva-{local,hml,demo}.postman_environment.json`. As pastas seguem a ordem do fluxo de negócio (`00 - Plataforma`, `01 - Autenticação e usuários`, …), cada request tem testes automatizados e a coleção pode ser executada várias vezes na mesma base (dados únicos por execução).
+
+As senhas não ficam no JSON: `adminPassword` e `demoPassword` são injetadas pelo script a partir de `BOOTSTRAP_ADMIN_PASSWORD` e `DEMO_USERS_PASSWORD` (lidas do `.env` no ambiente local). No Postman desktop, preencha essas duas variáveis no ambiente escolhido.
 
 ### Testes automatizados via Newman
 ```bash
@@ -123,7 +143,7 @@ docker compose up -d --build --wait
 ./scripts/run-postman.sh
 ```
 - Usa `npx newman` quando o Node.js está instalado; caso contrário, executa o Newman em container na rede do Compose.
-- Outro host: `BASE_URL="https://<distribuicao>.cloudfront.net" POSTMAN_ENV=hml ./scripts/run-postman.sh`.
+- Outro host: `BASE_URL="https://<distribuicao>.cloudfront.net" POSTMAN_ENV=demo BOOTSTRAP_ADMIN_PASSWORD=... DEMO_USERS_PASSWORD=... ./scripts/run-postman.sh`.
 - Relatório JUnit em `target/newman/`.
 
 ## Testes e qualidade
