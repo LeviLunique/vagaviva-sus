@@ -55,5 +55,19 @@ Agendamentos regulados (consultas + exames) estimados em três cenários (0,20 /
 
 Custo de mensageria por atendimento recuperado: **~R$ 3,90** (redução de 7,5 p.p. no absenteísmo), frente a R$ 10,77–R$ 28,26 de valor de tabela SUS de cada consulta/exame desperdiçado — o custo real para o gestor é bem maior que a tabela.
 
-## 5. Validação
-O teste de carga (k6) contra homologação registra aqui RPS por task, latência p95/p99 e uso de CPU/conexões, e ajusta o máximo de tasks, o pool de conexões e a classe do banco de produção.
+## 5. Perfil demo (apresentação de baixo custo)
+
+Não atende a demanda real do SUS — é só para ensaiar e gravar a apresentação com custo mínimo. Ver ADR-0012.
+
+| Item | Configuração | Custo |
+|---|---|---|
+| Computação | 1 EC2 `t4g.medium` (app + PostgreSQL no mesmo host), desliga sozinha após 30 min sem acesso e religa sozinha no próximo acesso | ~US$ 0,0536/h só enquanto ligada — para ~10h de uso concentrado (ensaios + gravação): **~US$ 0,55** |
+| Disco (EBS gp3, 20 GB) | cobrado o tempo todo, mesmo desligada | ~US$ 1,60/mês |
+| Rede (CloudFront + 2 Lambdas pequenas + EventBridge Scheduler) | sem ALB, sem NAT, sem IP elástico | ~US$ 1–2/mês (majoritariamente dentro do nível gratuito) |
+| Fila (SQS), Secrets Manager, logs | volume mínimo | ~US$ 1/mês |
+| **Total** | | **~US$ 5–10 no mês da apresentação**, contra ~US$ 75/mês do hml (ECS/RDS) ligado o tempo todo |
+
+O que se perde em relação ao hml/prod: sem alta disponibilidade (uma única instância), ~60–90s de espera no primeiro acesso após ociosidade, sem WAF por padrão (`enable_waf = false`, reversível), escala vertical em vez de horizontal.
+
+## 6. Validação
+O teste de carga (k6) contra o perfil hml/prod registra aqui RPS por task, latência p95/p99 e uso de CPU/conexões, e ajusta o máximo de tasks, o pool de conexões e a classe do banco de produção.

@@ -140,14 +140,21 @@ docker compose up -d --build --wait
 ## Infraestrutura AWS
 Código em [`infra/`](infra/) (Terraform):
 - `infra/bootstrap` — estado remoto (S3), ECR, roles OIDC de deploy e orçamento mensal.
-- `infra/stack` — rede em 3 camadas, CloudFront + WAF + VPC origin, ALB interno, ECS Fargate com autoscaling, RDS PostgreSQL, SQS + DLQ, segredos, alarmes e painel.
-- `infra/envs/hml` e `infra/envs/prod` — parâmetros de cada ambiente.
+- `infra/stack` — rede em 3 camadas, CloudFront + WAF + VPC origin, ALB interno, ECS Fargate com autoscaling, RDS PostgreSQL, SQS + DLQ, segredos, alarmes e painel. Usado por `infra/envs/hml` e `infra/envs/prod` — o desenho para a demanda real (ver [docs/capacity-planning.md](docs/capacity-planning.md)).
+- `infra/envs/demo` — **perfil de apresentação de baixo custo** (não é o design de produção): uma única EC2 roda a API e o PostgreSQL juntos, desliga sozinha quando ociosa e religa sozinha no primeiro acesso seguinte. Ver [ADR-0012](docs/adr/0012-perfil-demo-ec2-unica.md).
 
 ```bash
 ./scripts/aws/bootstrap.sh           # uma vez por conta
-./scripts/aws/infra.sh hml plan      # plan/apply/destroy/output
-./scripts/aws/pause.sh hml           # economiza custo fora do horário de uso
+./scripts/aws/infra.sh hml plan      # plan/apply/destroy/output (hml, prod ou demo)
+./scripts/aws/pause.sh hml           # hml/prod: economiza custo fora do horário de uso
 ./scripts/aws/resume.sh hml
+
+# Perfil demo
+./scripts/aws/infra.sh demo apply    # provisiona (ou atualiza) o ambiente de demonstração
+./scripts/aws/demo-up.sh             # liga a instância manualmente (ex.: antes de gravar)
+./scripts/aws/demo-down.sh           # desliga manualmente (o automático roda a cada 10 min)
+./scripts/aws/demo-refresh.sh        # publica a imagem do commit atual e atualiza a instância
+./scripts/aws/demo-logs.sh app       # acompanha os logs (app ou db)
 ```
 
 ## Troubleshooting

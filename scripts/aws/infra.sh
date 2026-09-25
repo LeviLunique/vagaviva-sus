@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Terraform de um ambiente.   Uso: ./scripts/aws/infra.sh <hml|prod> <plan|apply|destroy|output>
-# No primeiro apply, publica a imagem do commit atual no ECR (o serviço ECS precisa de uma imagem).
+# Terraform de um ambiente.   Uso: ./scripts/aws/infra.sh <hml|prod|demo> <plan|apply|destroy|output>
+# No primeiro apply, publica a imagem do commit atual no ECR (o serviço precisa de uma imagem).
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
-ENV="${1:?informe o ambiente: hml|prod}"
+ENV="${1:?informe o ambiente: hml|prod|demo}"
 ACTION="${2:-plan}"
 STACK="$ROOT_DIR/infra/envs/$ENV"
 [[ -d "$STACK" ]] || { echo "Ambiente inválido: $ENV" >&2; exit 1; }
@@ -21,9 +21,17 @@ case "$ACTION" in
   plan)    terraform -chdir="$STACK" plan -input=false ${EXTRA+"${EXTRA[@]}"} ;;
   apply)   terraform -chdir="$STACK" apply -input=false -auto-approve ${EXTRA+"${EXTRA[@]}"}
            url="$(terraform -chdir="$STACK" output -raw api_base_url)"
-           log "Registrando APP_BASE_URL=$url no environment $ENV do GitHub"
-           gh variable set APP_BASE_URL --env "$ENV" --repo "$GITHUB_REPO" --body "$url"
-           [[ "$ENV" == "hml" ]] && gh variable set AWS_DEPLOY_ENABLED --repo "$GITHUB_REPO" --body true
+           if [[ "$ENV" == "demo" ]]; then
+             # O perfil demo não passa pela esteira de deploy automática (é ligado/desligado
+             # manualmente) — só preenche o parâmetro que a própria instância lê no boot,
+             # quebrando o ciclo instância -> CloudFront -> instância (ver compute.tf).
+             log "Registrando a URL pública em /$PROJECT/demo/api/public-base-url"
+             aws ssm put-parameter --name "/$PROJECT/demo/api/public-base-url" --value "$url" --type String --overwrite >/dev/null
+           else
+             log "Registrando APP_BASE_URL=$url no environment $ENV do GitHub"
+             gh variable set APP_BASE_URL --env "$ENV" --repo "$GITHUB_REPO" --body "$url"
+             [[ "$ENV" == "hml" ]] && gh variable set AWS_DEPLOY_ENABLED --repo "$GITHUB_REPO" --body true
+           fi
            terraform -chdir="$STACK" output ;;
   destroy) terraform -chdir="$STACK" destroy -input=false ;;
   output)  terraform -chdir="$STACK" output ;;

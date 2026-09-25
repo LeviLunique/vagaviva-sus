@@ -1,0 +1,7 @@
+# Perfil demo (ADR-0012): o PostgreSQL roda num contêiner comum, na mesma instância da API,
+# sem TLS configurado — diferente do RDS (perfil aws puro), que exige SSL. Ativado como
+# "aws,demo" (spring.profiles.active): por listar "demo" por último, esta URL sobrescreve a
+# do application-aws.yml (sem ?sslmode=require) para os mesmos atributos.
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
