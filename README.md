@@ -143,6 +143,8 @@ Código em [`infra/`](infra/) (Terraform):
 - `infra/stack` — rede em 3 camadas, CloudFront + WAF + VPC origin, ALB interno, ECS Fargate com autoscaling, RDS PostgreSQL, SQS + DLQ, segredos, alarmes e painel. Usado por `infra/envs/hml` e `infra/envs/prod` — o desenho para a demanda real (ver [docs/capacity-planning.md](docs/capacity-planning.md)).
 - `infra/envs/demo` — **perfil de apresentação de baixo custo** (não é o design de produção): uma única EC2 roda a API e o PostgreSQL juntos, desliga sozinha quando ociosa e religa sozinha no primeiro acesso seguinte. Ver [ADR-0012](docs/adr/0012-perfil-demo-ec2-unica.md).
 
+> **Estado atual (2026-09-25):** o ambiente `hml` foi desprovisionado (`terraform destroy`) para eliminar custo duplicado — o `demo` é o único ambiente ativo neste momento (URL em `terraform -chdir=infra/envs/demo output api_base_url`). O deploy automático (`develop` → `hml`) está desligado (`AWS_DEPLOY_ENABLED=false`); reative com `./scripts/aws/infra.sh hml apply` seguido de `gh variable set AWS_DEPLOY_ENABLED --repo LeviLunique/vagaviva-sus --body true`.
+
 ```bash
 ./scripts/aws/bootstrap.sh           # uma vez por conta
 ./scripts/aws/infra.sh hml plan      # plan/apply/destroy/output (hml, prod ou demo)
