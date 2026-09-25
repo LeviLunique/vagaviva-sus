@@ -58,20 +58,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    ResponseEntity<ProblemDetail> handleAuthentication(AuthenticationException ex) {
+    ResponseEntity<ProblemDetail> handleAuthentication() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
                 .body(problem(ErrorCode.UNAUTHENTICATED, "Autenticação necessária: envie um token Bearer válido."));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex) {
+    ResponseEntity<ProblemDetail> handleAccessDenied() {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(problem(ErrorCode.ACCESS_DENIED, "Seu perfil não tem permissão para esta operação."));
     }
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
-    ResponseEntity<ProblemDetail> handleConcurrentModification(OptimisticLockingFailureException ex) {
+    ResponseEntity<ProblemDetail> handleConcurrentModification() {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem(ErrorCode.CONFLICT, "CONCURRENT_MODIFICATION",
                 "O registro foi alterado por outra operação. Recarregue e tente novamente."));
     }
