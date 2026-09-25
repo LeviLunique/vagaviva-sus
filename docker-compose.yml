@@ -1,0 +1,91 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: vagaviva-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-vagaviva}
+      POSTGRES_USER: ${DB_USER:-vagaviva}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vagaviva}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vagaviva-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vagaviva} -d ${DB_NAME:-vagaviva}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  sqs:
+    image: softwaremill/elasticmq-native:1.7.1
+    container_name: vagaviva-sqs
+    ports:
+      - "9324:9324"
+    configs:
+      - source: elasticmq
+        target: /opt/elasticmq.conf
+    networks:
+      - vagaviva-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vagaviva-app
+    depends_on:
+      db:
+        condition: service_healthy
+      sqs:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-vagaviva}
+      DB_USER: ${DB_USER:-vagaviva}
+      DB_PASSWORD: ${DB_PASSWORD:-vagaviva}
+      SERVER_PORT: 8080
+      AWS_REGION: ${AWS_REGION:-sa-east-1}
+      SQS_ENDPOINT: http://sqs:9324
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    networks:
+      - vagaviva-network
+
+volumes:
+  postgres_data:
+
+configs:
+  # SQS local (ElasticMQ) — espelha as filas criadas pelo Terraform na AWS.
+  # Inline para funcionar também em Docker remoto/VM (colima) sem bind mount.
+  elasticmq:
+    content: |
+      # SQS local (ElasticMQ) — espelha as filas criadas pelo Terraform na AWS.
+      include classpath("application.conf")
+
+      node-address {
+        protocol = http
+        host = localhost
+        port = 9324
+        context-path = ""
+      }
+
+      queues {
+        vagaviva-local-notifications-dlq {
+          defaultVisibilityTimeout = 60 seconds
+        }
+        vagaviva-local-notifications {
+          defaultVisibilityTimeout = 60 seconds
+          receiveMessageWait = 20 seconds
+          deadLettersQueue {
+            name = "vagaviva-local-notifications-dlq"
+            maxReceiveCount = 5
+          }
+        }
+      }
+
+networks:
+  vagaviva-network:
+    driver: bridge
