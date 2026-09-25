@@ -25,9 +25,11 @@ resource "aws_db_parameter_group" "this" {
   name   = local.name
   family = "postgres17"
 
+  # Parâmetro estático: aplicado no próximo reboot (evita diferença perpétua no plan).
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
 
   # Registra consultas lentas (> 500 ms) no CloudWatch Logs.

@@ -164,13 +164,28 @@ resource "aws_security_group" "alb" {
   tags        = { Name = "${local.name}-alb" }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "alb_http" {
-  security_group_id = aws_security_group.alb.id
-  cidr_ipv4         = var.vpc_cidr
-  ip_protocol       = "tcp"
-  from_port         = 80
-  to_port           = 80
-  description       = "CloudFront VPC origin"
+# Ao criar a VPC origin, o CloudFront provisiona na VPC o security group gerenciado
+# "CloudFront-VPCOrigins-Service-SG". O tráfego da borda é identificado por esse SG
+# (não pelo CIDR da VPC), então o ALB aceita conexões somente a partir dele.
+data "aws_security_group" "cloudfront_vpc_origin" {
+  filter {
+    name   = "group-name"
+    values = ["CloudFront-VPCOrigins-Service-SG"]
+  }
+  filter {
+    name   = "vpc-id"
+    values = [aws_vpc.this.id]
+  }
+  depends_on = [aws_cloudfront_vpc_origin.alb]
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_from_cloudfront" {
+  security_group_id            = aws_security_group.alb.id
+  referenced_security_group_id = data.aws_security_group.cloudfront_vpc_origin.id
+  ip_protocol                  = "tcp"
+  from_port                    = 80
+  to_port                      = 80
+  description                  = "CloudFront VPC origin"
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_app" {

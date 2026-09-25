@@ -17,12 +17,16 @@
 | Negação de serviço | Rate limit no WAF (rotas públicas e global); autoscaling; filas com DLQ; limites de tamanho de lote |
 | Elevação de privilégio | Autorização por papel e por unidade de saúde; testes de acesso negado (403) por endpoint; IAM de menor privilégio; deploy via OIDC restrito ao environment do GitHub; contêiner sem root |
 
-## 3. Cadeia de entrega
+## 3. Decisões registradas
+- **CSRF desabilitado (`SecurityConfig`)**: a API é *stateless* — autenticação exclusivamente pelo cabeçalho `Authorization: Bearer`, sem cookies nem sessão no servidor. Como o navegador não anexa credenciais automaticamente, não há vetor de CSRF; manter o filtro exigiria tokens CSRF sem benefício. O alerta correspondente da análise estática foi avaliado e dispensado com esta justificativa. Se algum dia houver autenticação por cookie (ex.: front-end com sessão), o CSRF deve ser reativado para essas rotas.
+- **Links do paciente sem login**: o token (128 bits, aleatório, armazenado só como hash, com validade) funciona como credencial de uso restrito a um agendamento/oferta; as ações são idempotentes e auditadas.
+
+## 4. Cadeia de entrega
 - Varredura de dependências e segredos (Trivy) e análise estática (CodeQL) em todo PR.
 - Imagens com tag imutável e varredura no push (ECR).
 - Nenhuma credencial em repositório: segredos no Secrets Manager e no GitHub (environments).
 
-## 4. Checklist OWASP Top 10 (2021)
+## 5. Checklist OWASP Top 10 (2021)
 
 | Item | Situação |
 |---|---|
