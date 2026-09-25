@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 class BCryptPasswordHasherTest {
 
-    private final BCryptPasswordHasher hasher = new BCryptPasswordHasher(4);
+    private final BCryptPasswordHasher hasher = new BCryptPasswordHasher();
 
     @Test
     @DisplayName("RN-02: usa BCrypt com custo 12 por padrão")

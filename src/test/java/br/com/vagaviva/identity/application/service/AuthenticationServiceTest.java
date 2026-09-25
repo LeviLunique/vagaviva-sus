@@ -49,6 +49,7 @@ class AuthenticationServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$hash-ficticio");
         var properties = new IdentityProperties(new IdentityProperties.Login(5, Duration.ofMinutes(15)),
                 new IdentityProperties.BootstrapAdmin("admin@vagaviva.test", null));
         service = new AuthenticationService(repository, passwordHasher, tokenIssuer, audit, properties, CLOCK);

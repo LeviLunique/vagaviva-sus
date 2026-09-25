@@ -169,14 +169,17 @@ class GlobalExceptionHandlerTest {
 
         @PostMapping("/probe/body")
         void body(@Valid @RequestBody ProbeRequest request) {
+            // Só a validação do corpo interessa ao teste.
         }
 
         @GetMapping("/probe/page")
         void page(@RequestParam @Max(100) int size) {
+            // Só a validação do parâmetro interessa ao teste.
         }
 
         @GetMapping("/probe/items/{id}")
         void item(@PathVariable UUID id) {
+            // Só a conversão do UUID interessa ao teste.
         }
 
         @GetMapping("/probe/authentication")

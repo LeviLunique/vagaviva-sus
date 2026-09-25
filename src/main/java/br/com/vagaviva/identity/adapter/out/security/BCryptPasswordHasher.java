@@ -15,11 +15,7 @@ class BCryptPasswordHasher implements PasswordHasher {
     private final BCryptPasswordEncoder encoder;
 
     BCryptPasswordHasher() {
-        this(STRENGTH);
-    }
-
-    BCryptPasswordHasher(int strength) {
-        this.encoder = new BCryptPasswordEncoder(strength);
+        this.encoder = new BCryptPasswordEncoder(STRENGTH);
     }
 
     @Override

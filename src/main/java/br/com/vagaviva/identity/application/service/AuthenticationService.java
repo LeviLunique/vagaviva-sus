@@ -12,6 +12,7 @@ import br.com.vagaviva.shared.domain.UnauthenticatedException;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,14 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 class AuthenticationService implements AuthenticateUseCase {
 
-    private static final String UNKNOWN_USER_HASH = "$2a$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW";
-
     private final StaffUserRepository repository;
     private final PasswordHasher passwordHasher;
     private final TokenIssuer tokenIssuer;
     private final IdentityAudit audit;
     private final LockoutPolicy lockoutPolicy;
     private final Clock clock;
+    /** Hash de uma senha aleatória, gerado no startup: e-mail inexistente custa o mesmo BCrypt. */
+    private final String unknownUserHash;
 
     AuthenticationService(StaffUserRepository repository, PasswordHasher passwordHasher, TokenIssuer tokenIssuer,
             IdentityAudit audit, IdentityProperties properties, Clock clock) {
@@ -41,6 +42,7 @@ class AuthenticationService implements AuthenticateUseCase {
         this.audit = audit;
         this.lockoutPolicy = properties.login().toPolicy();
         this.clock = clock;
+        this.unknownUserHash = passwordHasher.hash(UUID.randomUUID() + "-x1");
     }
 
     /** Falhas gravam contador e auditoria: por isso a exceção de credencial não desfaz a transação. */
@@ -48,7 +50,7 @@ class AuthenticationService implements AuthenticateUseCase {
     @Transactional(noRollbackFor = UnauthenticatedException.class)
     public AuthenticationResult authenticate(LoginCommand command) {
         Optional<StaffUser> found = repository.findByEmail(command.email());
-        String hash = found.map(StaffUser::passwordHash).orElse(UNKNOWN_USER_HASH);
+        String hash = found.map(StaffUser::passwordHash).orElse(unknownUserHash);
         boolean passwordMatches = passwordHasher.matches(command.password(), hash);
 
         if (found.isEmpty()) {

@@ -16,7 +16,8 @@ import org.springframework.stereotype.Component;
 @Component
 class AuditEventPersistenceAdapter implements AuditEventRepository {
 
-    private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "occurredAt");
+    private static final String OCCURRED_AT = "occurredAt";
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, OCCURRED_AT);
 
     private final AuditEventJpaRepository repository;
 
@@ -48,10 +49,10 @@ class AuditEventPersistenceAdapter implements AuditEventRepository {
                 predicates.add(builder.equal(root.get("actorId"), query.actorId()));
             }
             if (query.from() != null) {
-                predicates.add(builder.greaterThanOrEqualTo(root.get("occurredAt"), query.from()));
+                predicates.add(builder.greaterThanOrEqualTo(root.get(OCCURRED_AT), query.from()));
             }
             if (query.to() != null) {
-                predicates.add(builder.lessThan(root.get("occurredAt"), query.to()));
+                predicates.add(builder.lessThan(root.get(OCCURRED_AT), query.to()));
             }
             return builder.and(predicates.toArray(Predicate[]::new));
         };
