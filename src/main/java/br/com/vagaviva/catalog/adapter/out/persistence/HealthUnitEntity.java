@@ -20,8 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "health_unit")
@@ -30,7 +28,6 @@ class HealthUnitEntity {
     @Id
     private UUID id;
 
-    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(nullable = false, length = 7)
     private String cnes;
 
@@ -41,7 +38,6 @@ class HealthUnitEntity {
     @Column(nullable = false, length = 20)
     private HealthUnitType type;
 
-    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "municipality_code", nullable = false, length = 7)
     private String municipalityCode;
 
@@ -53,7 +49,6 @@ class HealthUnitEntity {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "health_unit_service_area", joinColumns = @JoinColumn(name = "health_unit_id"))
-    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "municipality_code", length = 7)
     private Set<String> serviceArea = new HashSet<>();
 

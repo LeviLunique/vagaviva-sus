@@ -17,11 +17,28 @@ import br.com.vagaviva.support.TestDocuments;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @IntegrationTest
 class PatientPersistenceAdapterIT {
 
     @Autowired PatientRepository repository;
+    @Autowired JdbcTemplate jdbc;
+
+    @Test
+    @DisplayName("o banco também rejeita CNS e telefone fora do formato (CHECK), mesmo por fora da aplicação")
+    void shouldEnforceFormatsInDatabase() {
+        String insert = """
+                insert into patient (id, cns, full_name, birth_date, municipality_code, phone, preferred_channel,
+                                     created_at, updated_at)
+                values (gen_random_uuid(), ?, 'Teste', '1990-01-01', '3550308', ?, 'SMS', now(), now())""";
+
+        assertThatThrownBy(() -> jdbc.update(insert, "123", "+5511999990001"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, TestDocuments.randomCns(), "11999990001"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
 
     @Test
     @DisplayName("grava e relê o paciente; busca por CNS e por CPF (colunas char)")

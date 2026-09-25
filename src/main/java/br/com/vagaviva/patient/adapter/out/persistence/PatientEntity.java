@@ -16,8 +16,6 @@ import jakarta.persistence.Version;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "patient")
@@ -26,11 +24,9 @@ class PatientEntity {
     @Id
     private UUID id;
 
-    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(nullable = false, length = 15)
     private String cns;
 
-    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(length = 11)
     private String cpf;
 
@@ -43,7 +39,6 @@ class PatientEntity {
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
-    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "municipality_code", nullable = false, length = 7)
     private String municipalityCode;
 

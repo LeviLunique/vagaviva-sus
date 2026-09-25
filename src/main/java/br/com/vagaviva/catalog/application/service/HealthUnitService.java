@@ -55,7 +55,7 @@ class HealthUnitService implements RegisterHealthUnitUseCase, QueryHealthUnitsUs
     @Override
     @Transactional
     public HealthUnit replace(UUID unitId, Set<String> municipalityCodes) {
-        HealthUnit unit = get(unitId);
+        HealthUnit unit = repository.findById(unitId).orElseThrow(CatalogErrors::unitNotFound);
         unit.replaceServiceArea(municipalities(municipalityCodes), clock);
         return repository.save(unit);
     }

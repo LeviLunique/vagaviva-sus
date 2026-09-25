@@ -16,10 +16,10 @@ import java.util.regex.Pattern;
 public record Specialty(UUID id, String code, String name, SpecialtyType type, boolean sensitive, boolean active,
         Instant createdAt) {
 
-    private static final Pattern CODE = Pattern.compile("[A-Z0-9_-]{2,20}");
+    private static final Pattern CODE_FORMAT = Pattern.compile("[A-Z0-9_-]{2,20}");
 
     public Specialty {
-        if (code == null || !CODE.matcher(code).matches()) {
+        if (code == null || !CODE_FORMAT.matcher(code).matches()) {
             throw new BusinessRuleException("INVALID_SPECIALTY_CODE",
                     "Código da especialidade inválido: use de 2 a 20 letras maiúsculas, números, '-' ou '_'.");
         }
