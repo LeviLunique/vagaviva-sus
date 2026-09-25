@@ -17,13 +17,15 @@ class CreateStaffUserService implements CreateStaffUserUseCase {
     private final StaffUserRepository repository;
     private final PasswordHasher passwordHasher;
     private final IdentityAudit audit;
+    private final HealthUnitAssignmentPolicy unitPolicy;
     private final Clock clock;
 
     CreateStaffUserService(StaffUserRepository repository, PasswordHasher passwordHasher, IdentityAudit audit,
-            Clock clock) {
+            HealthUnitAssignmentPolicy unitPolicy, Clock clock) {
         this.repository = repository;
         this.passwordHasher = passwordHasher;
         this.audit = audit;
+        this.unitPolicy = unitPolicy;
         this.clock = clock;
     }
 
@@ -31,6 +33,7 @@ class CreateStaffUserService implements CreateStaffUserUseCase {
     @Transactional
     public StaffUser create(CreateStaffUserCommand command) {
         PasswordPolicy.validate(command.password());
+        unitPolicy.check(command.role(), command.healthUnitId());
         if (repository.existsByEmail(command.email())) {
             throw new ConflictException("EMAIL_ALREADY_REGISTERED", "Já existe um profissional com este e-mail.");
         }
