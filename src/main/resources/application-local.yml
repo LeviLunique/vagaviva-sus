@@ -1,0 +1,8 @@
+# Perfil local (docker compose / IDE): carrega o seed de demonstração (unidades, especialidades e
+# pacientes fictícios) e cria os usuários de demonstração de cada papel (RF-11).
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
+vagaviva:
+  demo:
+    enabled: true

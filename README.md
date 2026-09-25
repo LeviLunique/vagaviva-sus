@@ -104,6 +104,15 @@ Base `/api/v1`. Implementados até o momento:
 | GET | `/api/v1/users/{id}` | Consultar profissional — ADMIN |
 | PATCH | `/api/v1/users/{id}/status` | Ativar/desativar profissional — ADMIN |
 | GET | `/api/v1/audit-events` | Trilha de auditoria paginada (filtros `resourceType`, `resourceId`, `actorId`, `from`, `to`) — ADMIN |
+| POST · GET | `/api/v1/health-units` | Cadastrar (ADMIN) e listar unidades de saúde (filtros `type`, `municipalityCode`) |
+| GET | `/api/v1/health-units/{id}` | Consultar unidade |
+| PUT | `/api/v1/health-units/{id}/service-area` | Substituir a área de atendimento (municípios IBGE; vazia = todos) — ADMIN |
+| POST · GET | `/api/v1/specialties` | Cadastrar (ADMIN) e listar especialidades/exames (filtro `type`) |
+| GET | `/api/v1/specialties/{id}` | Consultar especialidade |
+| POST | `/api/v1/patients` | Cadastrar paciente (CNS obrigatório, CPF opcional) — REQUESTER, ADMIN |
+| GET | `/api/v1/patients/{id}` | Consultar paciente (CNS/CPF mascarados; leitura auditada) — REQUESTER, REGULATOR, ADMIN |
+| POST | `/api/v1/patients/search` | Buscar por CNS **ou** CPF no corpo (nunca na URL) — REQUESTER, REGULATOR, ADMIN |
+| PATCH | `/api/v1/patients/{id}/contact` | Atualizar telefone, canal preferido e aceite do WhatsApp — REQUESTER, ADMIN |
 
 ### Autenticação
 ```bash
@@ -111,6 +120,8 @@ curl -s -X POST http://localhost:8080/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"admin@vagaviva.local","password":"Admin@Local2026"}'
 ```
+Nos perfis `local` e `demo` já existem usuários de demonstração de cada papel — `requester@vagaviva.local` (UBS), `regulator@vagaviva.local`, `scheduler@vagaviva.local` (unidade executante) e `manager@vagaviva.local` — com a senha de `DEMO_USERS_PASSWORD`.
+
 Envie o `accessToken` no header `Authorization: Bearer <token>` (no Swagger, botão **Authorize**). Papéis: `ADMIN`, `REQUESTER` e `SCHEDULER` (vinculados a uma unidade de saúde), `REGULATOR` e `MANAGER`. Erros seguem a RFC 9457 (`application/problem+json`) com `code` estável, ex.: `INVALID_CREDENTIALS`, `EMAIL_ALREADY_REGISTERED`, `WEAK_PASSWORD`, `ACCESS_DENIED`.
 
 Módulos do MVP e status de entrega:
@@ -118,7 +129,7 @@ Módulos do MVP e status de entrega:
 | Módulo | Principais recursos | Status |
 |---|---|---|
 | Identidade e auditoria | `/auth/login`, `/auth/me`, `/users`, `/audit-events` | ✅ |
-| Cadastros | `/health-units`, `/specialties`, `/patients` | ⏳ |
+| Cadastros | `/health-units`, `/specialties`, `/patients` | ✅ |
 | Regulação e transparência | `/referrals`, `/queues/{specialtyId}`, `/public/queue-position`, `/public/queue-stats` | ⏳ |
 | Agenda e alocação | `/slots`, `/allocation-runs`, `/appointments` (check-in, falta) | ⏳ |
 | Confirmação ativa | `/patient-actions/{token}` (confirmar, cancelar, desistir), `/p/{token}`, `/notifications` | ⏳ |
@@ -128,6 +139,7 @@ Módulos do MVP e status de entrega:
 ## Modelagem e banco de dados
 - Migrations Flyway em `src/main/resources/db/migration` — convenções em [MIGRATIONS](src/main/resources/db/migration/README.md).
 - Cada módulo é dono das suas tabelas (sem chaves estrangeiras entre módulos), o que mantém os módulos extraíveis para serviços independentes.
+- **Dados de demonstração** (`src/main/resources/db/seed`, perfis `local` e `demo`): 4 UBS, 3 unidades executantes, 8 especialidades (Psiquiatria marcada como sensível) e 30 pacientes fictícios — CNS/CPF gerados pelos algoritmos oficiais, telefones `+55119999900xx`. O seed é idempotente e nunca roda em produção.
 
 ## Swagger
 Habilitado nos ambientes local, homologação e demo; **desligado em produção** (perfil `aws` puro) para reduzir a superfície de ataque. A documentação interativa fica em `/swagger-ui.html`, com exemplos de requisição e das respostas de sucesso e erro (`application/problem+json`, RFC 9457).

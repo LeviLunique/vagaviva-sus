@@ -45,12 +45,13 @@ class StaffUserManagementServicesTest {
     @Mock StaffUserRepository repository;
     @Mock PasswordHasher passwordHasher;
     @Mock IdentityAudit audit;
+    @Mock HealthUnitAssignmentPolicy unitPolicy;
 
     @Nested
     class Create {
 
         private CreateStaffUserService service() {
-            return new CreateStaffUserService(repository, passwordHasher, audit, CLOCK);
+            return new CreateStaffUserService(repository, passwordHasher, audit, unitPolicy, CLOCK);
         }
 
         @Test
@@ -74,6 +75,21 @@ class StaffUserManagementServicesTest {
                     .isInstanceOf(BusinessRuleException.class)
                     .extracting("code").isEqualTo("WEAK_PASSWORD");
             verifyNoInteractions(repository);
+        }
+
+        @Test
+        @DisplayName("RN-03: unidade incompatível com o papel barra o cadastro antes de gravar")
+        void shouldApplyHealthUnitPolicy() {
+            UUID unit = UUID.randomUUID();
+            org.mockito.Mockito.doThrow(new BusinessRuleException("HEALTH_UNIT_TYPE_MISMATCH", "tipo"))
+                    .when(unitPolicy).check(Role.REQUESTER, unit);
+            var command = new CreateStaffUserCommand("Rita", "rita@vagaviva.test", "Senha12345", Role.REQUESTER, unit,
+                    ADMIN, null);
+
+            assertThatThrownBy(() -> service().create(command))
+                    .isInstanceOf(BusinessRuleException.class)
+                    .extracting("code").isEqualTo("HEALTH_UNIT_TYPE_MISMATCH");
+            verify(repository, never()).save(any());
         }
 
         @Test
