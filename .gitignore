@@ -16,8 +16,8 @@ replay_pid*
 .classpath
 .project
 .settings/
-bin/
-out/
+/bin/
+/out/
 
 # Ambiente e credenciais
 .env
