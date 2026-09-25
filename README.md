@@ -78,6 +78,7 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 25)"
 |---|---|---|
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `localhost`, `5432`, `vagaviva`… | PostgreSQL |
 | `SERVER_PORT` | `8080` | porta HTTP |
+| `PUBLIC_BASE_URL` | `http://localhost:8080` | URL pública anunciada no Swagger (em AWS, a URL da CloudFront) |
 | `SPRING_PROFILES_ACTIVE` | `local` | `local`, `aws`, `demo` |
 | `SQS_ENDPOINT` | `http://localhost:9324` | SQS local (ElasticMQ) |
 | `AWS_REGION` | `sa-east-1` | região AWS |
@@ -90,8 +91,9 @@ Base `/api/v1`. Implementados até o momento:
 
 | Método | Caminho | Descrição |
 |---|---|---|
+| GET | `/` | Índice da API (nome, versão e links de descoberta) |
 | GET | `/actuator/health` | Health check (liveness/readiness) |
-| GET | `/v3/api-docs` · `/swagger-ui.html` | Contrato OpenAPI e Swagger UI |
+| GET | `/v3/api-docs` · `/swagger-ui.html` | Contrato OpenAPI e Swagger UI (local, hml e demo; desligados em produção) |
 
 Módulos do MVP e status de entrega:
 
@@ -110,7 +112,7 @@ Módulos do MVP e status de entrega:
 - Cada módulo é dono das suas tabelas (sem chaves estrangeiras entre módulos), o que mantém os módulos extraíveis para serviços independentes.
 
 ## Swagger
-A documentação interativa fica em `/swagger-ui.html`, com exemplos de requisição e das respostas de sucesso e erro (`application/problem+json`, RFC 9457).
+Habilitado nos ambientes local, homologação e demo; **desligado em produção** (perfil `aws` puro) para reduzir a superfície de ataque. A documentação interativa fica em `/swagger-ui.html`, com exemplos de requisição e das respostas de sucesso e erro (`application/problem+json`, RFC 9457).
 
 ## Postman
 Coleção em `postman/vagaviva-api.postman_collection.json` e ambientes `postman/vagaviva-local.postman_environment.json` / `vagaviva-hml.postman_environment.json`. As pastas seguem a ordem do fluxo de negócio e cada request tem testes automatizados.

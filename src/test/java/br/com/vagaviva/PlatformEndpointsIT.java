@@ -32,6 +32,30 @@ class PlatformEndpointsIT {
     }
 
     @Test
+    @DisplayName("a raiz é pública e devolve um índice JSON da API com links de descoberta")
+    void rootReturnsApiIndex() {
+        assertThat(mvc.get().uri("/"))
+                .hasStatusOk()
+                .hasContentType("application/json")
+                .bodyJson()
+                .extractingPath("$.name").isEqualTo("VagaViva API");
+        assertThat(mvc.get().uri("/"))
+                .bodyJson()
+                .extractingPath("$.links.health").isEqualTo("/actuator/health");
+        assertThat(mvc.get().uri("/"))
+                .bodyJson()
+                .extractingPath("$.links.docs").isEqualTo("/swagger-ui.html");
+    }
+
+    @Test
+    @DisplayName("o contrato OpenAPI anuncia a URL pública, não o endereço interno do servidor")
+    void openApiAdvertisesPublicBaseUrl() {
+        assertThat(mvc.get().uri("/v3/api-docs"))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$.servers[0].url").isEqualTo("https://vagaviva.test");
+    }
+
+    @Test
     @DisplayName("qualquer rota de negócio exige autenticação (deny by default)")
     void businessRoutesRequireAuthentication() {
         assertThat(mvc.get().uri("/api/v1/referrals")).hasStatus(HttpStatus.UNAUTHORIZED);
