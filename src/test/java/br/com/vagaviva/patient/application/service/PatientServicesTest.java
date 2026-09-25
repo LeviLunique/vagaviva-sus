@@ -206,4 +206,18 @@ class PatientServicesTest {
         });
         assertThat(api.findSummary(UUID.randomUUID())).isEmpty();
     }
+
+    @Test
+    @DisplayName("PatientApi em lote: um acesso ao repositório, CNS só mascarado; lista vazia não consulta")
+    void shouldExposeSummariesInBatch() {
+        var api = new PatientApiImpl(repository, CLOCK);
+        Patient patient = aPatient();
+        when(repository.findAllById(java.util.List.of(patient.id()))).thenReturn(java.util.List.of(patient));
+
+        assertThat(api.findSummaries(java.util.List.of(patient.id())))
+                .containsOnlyKeys(patient.id())
+                .extractingByKey(patient.id())
+                .satisfies(summary -> assertThat(summary.cnsMasked()).isEqualTo("***********0000"));
+        assertThat(api.findSummaries(java.util.List.of())).isEmpty();
+    }
 }
