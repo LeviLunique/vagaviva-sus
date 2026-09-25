@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Testes unitários, integração (Testcontainers) e gate de cobertura
+        run: ./mvnw -B -ntp verify
+
+      - name: Resumo de cobertura
+        if: always()
+        run: |
+          csv=target/site/jacoco/jacoco.csv
+          [ -f "$csv" ] || exit 0
+          awk -F, 'NR>1 { ml+=$8; cl+=$9; mb+=$6; cb+=$7 }
+            END {
+              lt=ml+cl; bt=mb+cb
+              printf "### Cobertura (JaCoCo, unit + integração)\n\n| Métrica | Cobertas | Total | %% |\n|---|---|---|---|\n"
+              printf "| Linhas | %d | %d | %.1f%% |\n", cl, lt, (lt ? 100*cl/lt : 100)
+              printf "| Branches | %d | %d | %.1f%% |\n", cb, bt, (bt ? 100*cb/bt : 100)
+            }' "$csv" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatórios
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            target/site/jacoco/
+            target/surefire-reports/
+            target/failsafe-reports/
+          retention-days: 14
+
+  api-tests:
+    name: API tests (Newman)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Subir aplicação + PostgreSQL + SQS local
+        run: |
+          cp .env.example .env
+          docker compose up -d --build --wait --wait-timeout 300
+
+      - name: Executar coleção Postman
+        run: ./scripts/run-postman.sh
+
+      - name: Logs da aplicação
+        if: failure()
+        run: docker compose logs app --tail 300
+
+      - name: Publicar resultado
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: newman-report
+          path: target/newman/
+          retention-days: 14
+
+      - name: Derrubar ambiente
+        if: always()
+        run: docker compose down -v
+
+  terraform:
+    name: Terraform validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.14.8
+
+      - name: Formatação
+        run: terraform fmt -check -recursive infra
+
+      - name: Validação dos stacks
+        run: |
+          for stack in infra/bootstrap infra/envs/hml infra/envs/prod; do
+            echo "::group::$stack"
+            terraform -chdir="$stack" init -backend=false -input=false
+            terraform -chdir="$stack" validate
+            echo "::endgroup::"
+          done
+
+  security:
+    name: Security scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Vulnerabilidades e segredos (bloqueia CRITICAL)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Misconfiguração de IaC e Dockerfile (informativo)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          severity: HIGH,CRITICAL
+          exit-code: '0'

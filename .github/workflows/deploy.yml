@@ -1,0 +1,88 @@
+name: Deploy
+
+# develop → hml | tag vX.Y.Z (criada no merge de release/hotfix em main) → prod.
+# Autenticação via OIDC (sem access keys). A role de deploy só publica a imagem e atualiza o ECS;
+# mudanças de infraestrutura são aplicadas com Terraform (scripts/aws/infra.sh).
+on:
+  push:
+    branches: [develop]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente de destino
+        type: choice
+        options: [hml, prod]
+        default: hml
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    if: vars.AWS_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (startsWith(github.ref, 'refs/tags/') && 'prod' || 'hml') }}
+    concurrency:
+      group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || (startsWith(github.ref, 'refs/tags/') && 'prod' || 'hml') }}
+      cancel-in-progress: false
+    env:
+      ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (startsWith(github.ref, 'refs/tags/') && 'prod' || 'hml') }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Credenciais AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-deploy-${{ github.run_id }}
+
+      - name: Login no ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build e push da imagem (arm64/Graviton)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Atualizar serviço ECS
+        run: ./scripts/aws/deploy-image.sh "$ENVIRONMENT" "$IMAGE_TAG"
+
+      - name: Smoke test
+        env:
+          APP_BASE_URL: ${{ vars.APP_BASE_URL }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "$APP_BASE_URL/actuator/health" | grep -q '"UP"'; then echo "✔ UP"; exit 0; fi
+            sleep 10
+          done
+          echo "::error::Health check falhou em $APP_BASE_URL"; exit 1
+
+      - uses: actions/setup-node@v7
+        if: env.ENVIRONMENT == 'hml'
+        with:
+          node-version: '22'
+
+      - name: Testes de API no ambiente (Newman)
+        if: env.ENVIRONMENT == 'hml'
+        env:
+          POSTMAN_ENV: hml
+          BASE_URL: ${{ vars.APP_BASE_URL }}
+          BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+          DEMO_USERS_PASSWORD: ${{ secrets.DEMO_USERS_PASSWORD }}
+        run: ./scripts/run-postman.sh
