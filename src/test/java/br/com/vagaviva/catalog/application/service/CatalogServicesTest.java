@@ -156,6 +156,7 @@ class CatalogServicesTest {
         assertThat(api.findUnit(unit.id())).hasValueSatisfying(summary -> {
             assertThat(summary.type()).isEqualTo(HealthUnitType.SPECIALIZED);
             assertThat(summary.cnes()).isEqualTo("7654321");
+            assertThat(summary.serviceArea()).containsExactly("3550308");
         });
         assertThat(api.findSpecialty(specialty.id())).hasValueSatisfying(s -> assertThat(s.code()).isEqualTo("CARDIO"));
         assertThat(api.unitServes(unit.id(), "3550308")).isTrue();
