@@ -19,6 +19,7 @@
 
 ## 3. Decisões registradas
 - **CSRF desabilitado (`SecurityConfig`)**: a API é *stateless* — autenticação exclusivamente pelo cabeçalho `Authorization: Bearer`, sem cookies nem sessão no servidor. Como o navegador não anexa credenciais automaticamente, não há vetor de CSRF; manter o filtro exigiria tokens CSRF sem benefício. O alerta correspondente da análise estática foi avaliado e dispensado com esta justificativa. Se algum dia houver autenticação por cookie (ex.: front-end com sessão), o CSRF deve ser reativado para essas rotas.
+- **Swagger/OpenAPI desligados em produção**: a documentação interativa só existe em local, homologação e demo (perfil `demo`). Em produção, a raiz da API devolve apenas um índice JSON com o link do health check — nenhum mapa da API exposto na internet.
 - **Links do paciente sem login**: o token (128 bits, aleatório, armazenado só como hash, com validade) funciona como credencial de uso restrito a um agendamento/oferta; as ações são idempotentes e auditadas.
 
 ## 4. Cadeia de entrega

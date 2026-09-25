@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 public class SecurityConfig {
 
     static final String[] PUBLIC_ROUTES = {
+        "/",
         "/actuator/health/**",
         "/actuator/info",
         "/v3/api-docs/**",

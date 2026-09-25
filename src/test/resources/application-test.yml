@@ -5,3 +5,5 @@ logging:
   level:
     root: WARN
     br.com.vagaviva: INFO
+vagaviva:
+  public-base-url: https://vagaviva.test
