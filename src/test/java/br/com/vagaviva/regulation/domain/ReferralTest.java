@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -174,22 +175,22 @@ class ReferralTest {
         Consumer<Referral> complete = r -> r.markCompleted(CLOCK);
         Consumer<Referral> withdraw = r -> r.withdraw(CLOCK);
         return Stream.of(
-                Arguments.of("aprovar já na fila", aWaitingReferral(), approve),
-                Arguments.of("devolver já na fila", aWaitingReferral(), giveBack),
-                Arguments.of("reenviar pendente", aPendingReferral(), resubmit),
-                Arguments.of("agendar pendente", aPendingReferral(), schedule),
-                Arguments.of("agendar devolvido", aReturnedReferral(), schedule),
-                Arguments.of("voltar à fila sem estar agendado", aWaitingReferral(), backToQueue),
-                Arguments.of("reavaliar sem estar agendado", aWaitingReferral(), review),
-                Arguments.of("concluir sem estar agendado", aWaitingReferral(), complete),
-                Arguments.of("desistir pendente de regulação", aPendingReferral(), withdraw),
-                Arguments.of("aprovar devolvido sem reenvio", aReturnedReferral(), approve));
+                Arguments.of(Named.of("aprovar já na fila", aWaitingReferral()), approve),
+                Arguments.of(Named.of("devolver já na fila", aWaitingReferral()), giveBack),
+                Arguments.of(Named.of("reenviar pendente", aPendingReferral()), resubmit),
+                Arguments.of(Named.of("agendar pendente", aPendingReferral()), schedule),
+                Arguments.of(Named.of("agendar devolvido", aReturnedReferral()), schedule),
+                Arguments.of(Named.of("voltar à fila sem estar agendado", aWaitingReferral()), backToQueue),
+                Arguments.of(Named.of("reavaliar sem estar agendado", aWaitingReferral()), review),
+                Arguments.of(Named.of("concluir sem estar agendado", aWaitingReferral()), complete),
+                Arguments.of(Named.of("desistir pendente de regulação", aPendingReferral()), withdraw),
+                Arguments.of(Named.of("aprovar devolvido sem reenvio", aReturnedReferral()), approve));
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidTransitions")
     @DisplayName("transições fora do diagrama ⇒ REFERRAL_INVALID_STATE (409)")
-    void shouldRejectInvalidTransitions(String description, Referral referral, Consumer<Referral> action) {
+    void shouldRejectInvalidTransitions(Referral referral, Consumer<Referral> action) {
         assertThatThrownBy(() -> action.accept(referral))
                 .isInstanceOf(ConflictException.class)
                 .extracting("code").isEqualTo("REFERRAL_INVALID_STATE");
