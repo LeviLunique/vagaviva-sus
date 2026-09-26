@@ -19,6 +19,7 @@ import br.com.vagaviva.scheduling.SchedulingApi;
 import br.com.vagaviva.shared.domain.ForbiddenOperationException;
 import br.com.vagaviva.shared.security.CurrentUser;
 import br.com.vagaviva.shared.security.Role;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,13 +48,17 @@ class OfferExpirationAndQueryTest {
         UUID broken = UUID.randomUUID();
         lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         when(offers.findSlotsWithOverdueOffers(NOW, 100)).thenReturn(List.of(broken, ok));
+        lenient().when(offers.expireOverdue(ok, NOW)).thenReturn(2);
+        var meters = new SimpleMeterRegistry();
         doThrow(new IllegalStateException("falha")).when(campaign).advance(broken);
 
-        int processed = new OfferExpirationService(offers, campaign, transactionManager, CLOCK).expireOverdue();
+        int processed = new OfferExpirationService(offers, campaign,
+                new OfferMetrics(meters), transactionManager, CLOCK).expireOverdue();
 
         assertThat(processed).isEqualTo(1);
         verify(offers).expireOverdue(ok, NOW);
         verify(campaign).advance(ok);
+        assertThat(meters.counter("vagaviva.offers", "status", "EXPIRED").count()).isEqualTo(2.0);
     }
 
     @Test

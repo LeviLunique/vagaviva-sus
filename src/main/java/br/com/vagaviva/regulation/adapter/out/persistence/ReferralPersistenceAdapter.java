@@ -4,6 +4,7 @@ import br.com.vagaviva.regulation.EligibilityCriteria;
 import br.com.vagaviva.regulation.ReferralCandidate;
 import br.com.vagaviva.regulation.ReferralStatus;
 import br.com.vagaviva.regulation.RiskClass;
+import br.com.vagaviva.regulation.WaitingCount;
 import br.com.vagaviva.regulation.application.port.in.QueryReferralsUseCase.ReferralFilter;
 import br.com.vagaviva.regulation.application.port.out.ReferralRepository;
 import br.com.vagaviva.regulation.domain.Referral;
@@ -133,5 +134,14 @@ class ReferralPersistenceAdapter implements ReferralRepository {
             }
             return builder.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    @Override
+    public List<WaitingCount> countWaiting() {
+        return jdbc.query("""
+                SELECT specialty_id, risk_class, count(*) AS waiting FROM referral
+                WHERE status = 'WAITING' GROUP BY specialty_id, risk_class""",
+                (rs, n) -> new WaitingCount(rs.getObject("specialty_id", UUID.class),
+                        RiskClass.valueOf(rs.getString("risk_class")), rs.getLong("waiting")));
     }
 }

@@ -2,6 +2,7 @@ package br.com.vagaviva.regulation.application.port.out;
 
 import br.com.vagaviva.regulation.EligibilityCriteria;
 import br.com.vagaviva.regulation.ReferralCandidate;
+import br.com.vagaviva.regulation.WaitingCount;
 import br.com.vagaviva.regulation.application.port.in.QueryReferralsUseCase.ReferralFilter;
 import br.com.vagaviva.regulation.domain.Referral;
 import java.util.List;
@@ -28,6 +29,8 @@ public interface ReferralRepository {
 
     /** Encaminhamentos {@code WAITING} da especialidade na ordem oficial (RN-06). */
     Page<Referral> findQueue(UUID specialtyId, Pageable pageable);
+
+    List<WaitingCount> countWaiting();
 
     /** Linhas travadas com {@code FOR UPDATE SKIP LOCKED} na ordem oficial. */
     List<ReferralCandidate> lockWaiting(UUID specialtyId, EligibilityCriteria criteria, boolean shortNoticeOnly,

@@ -142,6 +142,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- F7: traces e métricas OTLP para o sidecar ADOT (X-Ray / CloudWatch). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+        </dependency>
 
         <!-- Testes -->
         <dependency>

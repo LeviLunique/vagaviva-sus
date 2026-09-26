@@ -2,6 +2,7 @@ package br.com.vagaviva.reallocation.application.service;
 
 import br.com.vagaviva.catalog.CatalogApi;
 import br.com.vagaviva.catalog.HealthUnitSummary;
+import br.com.vagaviva.reallocation.OfferStatus;
 import br.com.vagaviva.reallocation.application.port.in.StartOfferCampaignUseCase;
 import br.com.vagaviva.reallocation.application.port.out.SlotOfferRepository;
 import br.com.vagaviva.reallocation.domain.OfferRoundPolicy;
@@ -41,17 +42,20 @@ class OfferCampaignService implements StartOfferCampaignUseCase {
     private final CatalogApi catalog;
     private final OfferRoundPolicy policy;
     private final ReallocationAudit audit;
+    private final OfferMetrics metrics;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
     OfferCampaignService(SlotOfferRepository offers, SchedulingApi scheduling, QueueApi queue, CatalogApi catalog,
-            OfferRoundPolicy policy, ReallocationAudit audit, ApplicationEventPublisher events, Clock clock) {
+            OfferRoundPolicy policy, ReallocationAudit audit, OfferMetrics metrics, ApplicationEventPublisher events,
+            Clock clock) {
         this.offers = offers;
         this.scheduling = scheduling;
         this.queue = queue;
         this.catalog = catalog;
         this.policy = policy;
         this.audit = audit;
+        this.metrics = metrics;
         this.events = events;
         this.clock = clock;
     }
@@ -85,6 +89,7 @@ class OfferCampaignService implements StartOfferCampaignUseCase {
             events.publishEvent(new SlotOffered(offer.id(), slotId, offer.patientId(), offer.referralId(),
                     slot.startAt(), expiresAt));
         }
+        metrics.count(OfferStatus.PENDING, candidates.size());
         audit.record(ReallocationAudit.OFFER_ROUND_STARTED, ReallocationAudit.SLOT, slotId,
                 Map.of("round", String.valueOf(round), "offers", String.valueOf(candidates.size())));
     }

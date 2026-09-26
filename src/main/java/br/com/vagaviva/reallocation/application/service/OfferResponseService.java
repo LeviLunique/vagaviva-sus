@@ -1,5 +1,6 @@
 package br.com.vagaviva.reallocation.application.service;
 
+import br.com.vagaviva.reallocation.OfferStatus;
 import br.com.vagaviva.reallocation.OfferView;
 import br.com.vagaviva.reallocation.ReallocationApi;
 import br.com.vagaviva.reallocation.application.port.in.StartOfferCampaignUseCase;
@@ -30,15 +31,17 @@ class OfferResponseService implements ReallocationApi {
     private final SchedulingApi scheduling;
     private final StartOfferCampaignUseCase campaign;
     private final ReallocationAudit audit;
+    private final OfferMetrics metrics;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
     OfferResponseService(SlotOfferRepository offers, SchedulingApi scheduling, StartOfferCampaignUseCase campaign,
-            ReallocationAudit audit, ApplicationEventPublisher events, Clock clock) {
+            ReallocationAudit audit, OfferMetrics metrics, ApplicationEventPublisher events, Clock clock) {
         this.offers = offers;
         this.scheduling = scheduling;
         this.campaign = campaign;
         this.audit = audit;
+        this.metrics = metrics;
         this.events = events;
         this.clock = clock;
     }
@@ -57,7 +60,8 @@ class OfferResponseService implements ReallocationApi {
         offer.accept(clock);
         AppointmentView appointment = scheduling.allocateFromOffer(offer.slotId(), offer.referralId());
         offers.save(offer);
-        offers.supersedeOthers(offer.slotId(), offer.id(), clock.instant());
+        metrics.count(OfferStatus.ACCEPTED, 1);
+        metrics.count(OfferStatus.SUPERSEDED, offers.supersedeOthers(offer.slotId(), offer.id(), clock.instant()));
         events.publishEvent(new SlotOfferAccepted(offer.id(), offer.slotId(), offer.referralId(), offer.patientId(),
                 appointment.id(), offer.round(), appointment.startAt()));
         audit.record(ReallocationAudit.OFFER_ACCEPTED, ReallocationAudit.SLOT_OFFER, offer.id(),
@@ -72,6 +76,7 @@ class OfferResponseService implements ReallocationApi {
         SlotOffer offer = load(offerId);
         if (offer.decline(clock)) {
             offers.save(offer);
+            metrics.count(OfferStatus.DECLINED, 1);
             audit.record(ReallocationAudit.OFFER_DECLINED, ReallocationAudit.SLOT_OFFER, offer.id(),
                     Map.of("slotId", offer.slotId().toString(), "round", String.valueOf(offer.round())));
             campaign.advance(offer.slotId());

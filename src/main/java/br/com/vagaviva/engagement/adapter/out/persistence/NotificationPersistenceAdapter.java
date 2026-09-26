@@ -9,6 +9,9 @@ import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -51,6 +54,15 @@ class NotificationPersistenceAdapter implements NotificationRepository {
     @Override
     public boolean existsForOffer(UUID offerId) {
         return repository.existsByOfferId(offerId);
+    }
+
+    @Override
+    public Map<String, Long> countSentByChannel(Instant from, Instant to) {
+        Map<String, Long> counts = new TreeMap<>();
+        for (Object[] row : repository.countSentByChannel(from, to)) {
+            counts.put(((NotificationChannel) row[0]).name(), (Long) row[1]);
+        }
+        return counts;
     }
 
     @Override

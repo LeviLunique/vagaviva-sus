@@ -1,5 +1,6 @@
 package br.com.vagaviva.reallocation.application.service;
 
+import br.com.vagaviva.reallocation.OfferStatus;
 import br.com.vagaviva.reallocation.application.port.in.ExpireOffersUseCase;
 import br.com.vagaviva.reallocation.application.port.in.StartOfferCampaignUseCase;
 import br.com.vagaviva.reallocation.application.port.out.SlotOfferRepository;
@@ -21,13 +22,15 @@ class OfferExpirationService implements ExpireOffersUseCase {
 
     private final SlotOfferRepository offers;
     private final StartOfferCampaignUseCase campaign;
+    private final OfferMetrics metrics;
     private final TransactionTemplate perSlot;
     private final Clock clock;
 
-    OfferExpirationService(SlotOfferRepository offers, StartOfferCampaignUseCase campaign,
+    OfferExpirationService(SlotOfferRepository offers, StartOfferCampaignUseCase campaign, OfferMetrics metrics,
             PlatformTransactionManager transactionManager, Clock clock) {
         this.offers = offers;
         this.campaign = campaign;
+        this.metrics = metrics;
         this.perSlot = new TransactionTemplate(transactionManager);
         this.perSlot.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.clock = clock;
@@ -39,7 +42,7 @@ class OfferExpirationService implements ExpireOffersUseCase {
         for (UUID slotId : offers.findSlotsWithOverdueOffers(clock.instant(), BATCH)) {
             try {
                 perSlot.executeWithoutResult(status -> {
-                    offers.expireOverdue(slotId, clock.instant());
+                    metrics.count(OfferStatus.EXPIRED, offers.expireOverdue(slotId, clock.instant()));
                     campaign.advance(slotId);
                 });
                 processed++;

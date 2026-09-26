@@ -40,7 +40,8 @@ class SlotReleaser {
         SlotStatus destination = policy.decide(slot.startAt(), clock.instant());
         slot.release(destination, clock);
         slots.save(slot);
-        events.publishEvent(new SlotReleased(slot.id(), reason, destination, slot.startAt()));
+        events.publishEvent(new SlotReleased(slot.id(), slot.unitId(), slot.specialtyId(), reason, destination,
+                slot.startAt(), slot.releaseCount(), clock.instant()));
         if (destination == SlotStatus.OPEN_FOR_OFFERS) {
             events.publishEvent(new SlotOpenedForOffers(slot.id(), slot.unitId(), slot.specialtyId(), slot.startAt()));
         } else if (destination == SlotStatus.EXPIRED) {

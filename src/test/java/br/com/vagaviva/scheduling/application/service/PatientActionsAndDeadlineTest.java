@@ -104,8 +104,9 @@ class PatientActionsAndDeadlineTest {
         assertThat(view.status()).isEqualTo(AppointmentStatus.CANCELLED_BY_PATIENT);
         verify(queue).returnToQueue(appointment.referralId(), ReturnReason.PATIENT_CANCELLED);
         verify(slots).save(argThat(slot -> slot.status() == SlotStatus.AVAILABLE && slot.releaseCount() == 1));
-        verify(events).publishEvent(new SlotReleased(appointment.slotId(), SlotReleased.Reason.PATIENT_CANCELLED,
-                SlotStatus.AVAILABLE, appointment.startAt()));
+        verify(events).publishEvent(new SlotReleased(appointment.slotId(), appointment.unitId(),
+                appointment.specialtyId(), SlotReleased.Reason.PATIENT_CANCELLED, SlotStatus.AVAILABLE,
+                appointment.startAt(), 1, CLOCK.instant()));
         verify(events).publishEvent(argThat((Object e) -> e instanceof AppointmentCancelled c
                 && c.reason() == AppointmentCancelled.Reason.PATIENT));
     }

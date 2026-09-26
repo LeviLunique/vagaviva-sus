@@ -280,6 +280,12 @@ resource "aws_cloudwatch_log_group" "api" {
   retention_in_days = var.log_retention_days
 }
 
+# Métricas de negócio em EMF (o ADOT grava aqui e o CloudWatch extrai para o namespace VagaViva).
+resource "aws_cloudwatch_log_group" "metrics" {
+  name              = "/ecs/${local.name}/metrics"
+  retention_in_days = var.log_retention_days
+}
+
 locals {
   api_container = {
     name      = "api"
@@ -302,6 +308,8 @@ locals {
       { name = "PUBLIC_BASE_URL", value = "https://${aws_cloudfront_distribution.api.domain_name}" },
       { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "http://localhost:4318" },
       { name = "OTEL_SERVICE_NAME", value = "${local.name}-api" },
+      # F7: traces e métricas OTLP só quando há o sidecar para recebê-los.
+      { name = "OTEL_EXPORT_ENABLED", value = tostring(var.enable_otel_collector) },
     ]
     secrets = [
       { name = "DB_USER", valueFrom = "${aws_secretsmanager_secret.db.arn}:username::" },
@@ -327,12 +335,42 @@ locals {
     }
   }
 
+  # ADOT: traces para o X-Ray; métricas (EMF) no namespace VagaViva com os agregados sem dimensão e por
+  # dimensão única — o alarme de falhas usa {status} e o de alocação parada usa o total.
+  otel_config = yamlencode({
+    extensions = { health_check = {} }
+    receivers  = { otlp = { protocols = { grpc = { endpoint = "0.0.0.0:4317" }, http = { endpoint = "0.0.0.0:4318" } } } }
+    processors = {
+      "batch/traces"    = { timeout = "1s", send_batch_size = 50 }
+      "batch/metrics"   = { timeout = "60s" }
+      resourcedetection = { detectors = ["env", "ecs"] }
+    }
+    exporters = {
+      awsxray = { region = local.region }
+      awsemf = {
+        region                  = local.region
+        namespace               = "VagaViva"
+        log_group_name          = aws_cloudwatch_log_group.metrics.name
+        dimension_rollup_option = "ZeroAndSingleDimensionRollup"
+      }
+    }
+    service = {
+      extensions = ["health_check"]
+      pipelines = {
+        traces  = { receivers = ["otlp"], processors = ["resourcedetection", "batch/traces"], exporters = ["awsxray"] }
+        metrics = { receivers = ["otlp"], processors = ["resourcedetection", "batch/metrics"], exporters = ["awsemf"] }
+      }
+    }
+  })
+
   otel_container = {
     name      = "otel-collector"
     image     = var.otel_collector_image
     essential = false
     memory    = 128
-    command   = ["--config=/etc/ecs/ecs-default-config.yaml"]
+    environment = [
+      { name = "AOT_CONFIG_CONTENT", value = local.otel_config },
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {

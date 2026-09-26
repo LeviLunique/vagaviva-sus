@@ -32,6 +32,7 @@ import br.com.vagaviva.regulation.RiskClass;
 import br.com.vagaviva.scheduling.SchedulingApi;
 import br.com.vagaviva.scheduling.SlotStatus;
 import br.com.vagaviva.scheduling.SlotView;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -58,11 +59,13 @@ class OfferCampaignServiceTest {
     @Mock ReallocationAudit audit;
     @Mock ApplicationEventPublisher events;
 
+    private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
+    private final OfferMetrics metrics = new OfferMetrics(meters);
     private OfferCampaignService service;
 
     @BeforeEach
     void setUp() {
-        service = new OfferCampaignService(offers, scheduling, queue, catalog, POLICY, audit, events, CLOCK);
+        service = new OfferCampaignService(offers, scheduling, queue, catalog, POLICY, audit, metrics, events, CLOCK);
         lenient().when(offers.save(any())).thenAnswer(call -> call.getArgument(0));
         lenient().when(catalog.findUnit(UNIT)).thenReturn(Optional.of(new HealthUnitSummary(UNIT, "9900201",
                 "AME Zona Norte", HealthUnitType.SPECIALIZED, "3550308", "São Paulo", "Av. Norte, 1500",
@@ -97,6 +100,7 @@ class OfferCampaignServiceTest {
         verify(events, times(3)).publishEvent(any(SlotOffered.class));
         verify(audit).record(eq(ReallocationAudit.OFFER_ROUND_STARTED), eq(ReallocationAudit.SLOT), eq(SLOT), any());
         verify(scheduling, never()).markSlotLost(any());
+        assertThat(meters.counter("vagaviva.offers", "status", "PENDING").count()).isEqualTo(3.0);
     }
 
     @Test
@@ -126,7 +130,7 @@ class OfferCampaignServiceTest {
         service.advance(SLOT);
 
         when(offers.findLastRound(SLOT)).thenReturn(0);
-        new OfferCampaignService(offers, scheduling, queue, catalog, POLICY, audit, events,
+        new OfferCampaignService(offers, scheduling, queue, catalog, POLICY, audit, metrics, events,
                 at(START.minus(Duration.ofHours(2)))).advance(SLOT);
 
         verify(scheduling, times(3)).markSlotLost(SLOT);
