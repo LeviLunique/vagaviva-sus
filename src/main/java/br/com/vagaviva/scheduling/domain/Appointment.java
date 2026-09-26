@@ -24,7 +24,7 @@ public final class Appointment {
     private final Instant startAt;
     private final AppointmentOrigin origin;
     private AppointmentStatus status;
-    private final @Nullable Instant confirmationDeadline;
+    private @Nullable Instant confirmationDeadline;
     private @Nullable Instant confirmedAt;
     private @Nullable Instant cancelledAt;
     private @Nullable Instant outcomeAt;
@@ -92,6 +92,68 @@ public final class Appointment {
         moveTo(AppointmentStatus.NO_SHOW);
         outcomeAt = now;
         updatedAt = now;
+    }
+
+    /**
+     * RN-12: confirma até o prazo. Confirmar de novo é aceito (idempotente) e não muda nada.
+     *
+     * @return {@code true} se mudou de estado nesta chamada
+     */
+    public boolean confirm(Clock clock) {
+        if (status == AppointmentStatus.CONFIRMED) {
+            return false;
+        }
+        Instant now = clock.instant();
+        if (status == AppointmentStatus.PENDING_CONFIRMATION && confirmationDeadline != null
+                && now.isAfter(confirmationDeadline)) {
+            throw new BusinessRuleException("CONFIRMATION_DEADLINE_PASSED", "O prazo para confirmar já terminou.");
+        }
+        moveTo(AppointmentStatus.CONFIRMED);
+        confirmedAt = now;
+        updatedAt = now;
+        return true;
+    }
+
+    /** RN-12: o paciente cancela até o início. Idempotente. */
+    public boolean cancelByPatient(Clock clock) {
+        return leaveBeforeStart(AppointmentStatus.CANCELLED_BY_PATIENT, clock);
+    }
+
+    /** RF-26: o paciente desiste do atendimento até o início. Idempotente. */
+    public boolean withdraw(Clock clock) {
+        return leaveBeforeStart(AppointmentStatus.WITHDRAWN, clock);
+    }
+
+    /** RF-27: prazo vencido sem confirmação. */
+    public void expireUnconfirmed(Clock clock) {
+        Instant now = clock.instant();
+        if (confirmationDeadline == null || !now.isAfter(confirmationDeadline)) {
+            throw new BusinessRuleException("CONFIRMATION_DEADLINE_NOT_PASSED", "O prazo de confirmação ainda não venceu.");
+        }
+        moveTo(AppointmentStatus.EXPIRED_UNCONFIRMED);
+        updatedAt = now;
+    }
+
+    /** Recurso de demonstração (RF-29): antecipa o prazo de confirmação para o instante informado. */
+    public void anticipateDeadline(Instant newDeadline) {
+        if (status != AppointmentStatus.PENDING_CONFIRMATION) {
+            throw new ConflictException("APPOINTMENT_INVALID_STATE", "Só agendamentos aguardando confirmação têm prazo.");
+        }
+        confirmationDeadline = newDeadline;
+    }
+
+    private boolean leaveBeforeStart(AppointmentStatus target, Clock clock) {
+        if (status == target) {
+            return false;
+        }
+        Instant now = clock.instant();
+        if (!now.isBefore(startAt) && status.isOpen()) {
+            throw new BusinessRuleException("APPOINTMENT_ALREADY_STARTED", "O horário do atendimento já começou.");
+        }
+        moveTo(target);
+        cancelledAt = now;
+        updatedAt = now;
+        return true;
     }
 
     /** RF-23: a unidade cancelou a vaga. */

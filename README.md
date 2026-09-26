@@ -79,12 +79,14 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 25)"
 |---|---|---|
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `localhost`, `5432`, `vagaviva`… | PostgreSQL |
 | `SERVER_PORT` | `8080` | porta HTTP |
-| `PUBLIC_BASE_URL` | `http://localhost:8080` | URL pública anunciada no Swagger (em AWS, a URL da CloudFront) |
+| `PUBLIC_BASE_URL` | `http://localhost:8080` | URL pública anunciada no Swagger e usada nos links enviados ao paciente (em AWS, a URL da CloudFront) |
 | `SPRING_PROFILES_ACTIVE` | `local` | `local`, `aws`, `demo` |
 | `JWT_PRIVATE_KEY` | vazio (par efêmero) | chave RS256 dos tokens — Base64 de um PEM PKCS#8; obrigatória no perfil `aws` |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | `admin@vagaviva.local`, `Admin@Local2026` | administrador criado no primeiro start sem ADMIN |
 | `DEMO_USERS_PASSWORD` | `Demo@Local2026` | senha dos usuários de demonstração e dos criados pela coleção Postman |
-| `SQS_ENDPOINT` | `http://localhost:9324` | SQS local (ElasticMQ) |
+| `SQS_ENDPOINT` | `http://localhost:9324` | SQS local (ElasticMQ); vazio na AWS |
+| `SQS_NOTIFICATIONS_QUEUE` | `vagaviva-local-notifications` | fila de envio das mensagens ao paciente (DLQ após 5 recebimentos) |
+| `WHATSAPP_PHONE_NUMBER_ID` | vazio | número de origem do WhatsApp (AWS End User Messaging Social) — só com o canal ligado |
 | `AWS_REGION` | `sa-east-1` | região AWS |
 
 Novas variáveis são adicionadas a cada módulo entregue (ver `.env.example`).
@@ -126,6 +128,12 @@ Base `/api/v1`. Implementados até o momento:
 | POST | `/api/v1/allocation-runs` | Executar a alocação agora (também automática a cada 5 min e após cada publicação) — ADMIN, SCHEDULER |
 | GET | `/api/v1/appointments` · `/api/v1/appointments/{id}` | Agendamentos da unidade (filtros `unitId`, `date`, `status`); leitura auditada |
 | POST | `/api/v1/appointments/{id}/check-in` · `/no-show` | Comparecimento (no dia) ou falta (após o início) — SCHEDULER da unidade |
+| GET | `/api/v1/patient-actions/{token}` | **Público (link do paciente)**: primeiro nome, "consulta"/"exame", data, unidade, prazo e ações permitidas; `404` link inválido, `410` expirado |
+| POST | `/api/v1/patient-actions/{token}/confirm` · `/cancel` · `/withdraw` | **Público**: confirmar (até o prazo, idempotente), "não posso ir" (volta à fila na mesma posição) e "não preciso mais" (sai da fila) |
+| GET | `/p/{token}` | **Público**: link curto das mensagens → `302` para `/api/v1/patient-actions/{token}` |
+| GET | `/api/v1/notifications` | Log de entregas (status, canal, tentativas — sem texto nem telefone) — ADMIN; SCHEDULER informando um `appointmentId` da própria unidade |
+| GET | `/api/v1/dev/sandbox/messages` | Demonstração: mensagens do canal SANDBOX de um paciente, com o link — ADMIN (só com `vagaviva.demo.enabled`) |
+| POST | `/api/v1/dev/appointments/{id}/expire-confirmation` | Demonstração: expira agora o prazo de confirmação (vaga liberada, paciente de volta à fila) — ADMIN |
 
 ### Autenticação
 ```bash
@@ -145,7 +153,7 @@ Módulos do MVP e status de entrega:
 | Cadastros | `/health-units`, `/specialties`, `/patients` | ✅ |
 | Regulação e transparência | `/referrals`, `/queues/{specialtyId}`, `/public/queue-position`, `/public/queue-stats` | ✅ |
 | Agenda e alocação | `/slots`, `/allocation-runs`, `/appointments` (check-in, falta) | ✅ |
-| Confirmação ativa | `/patient-actions/{token}` (confirmar, cancelar, desistir), `/p/{token}`, `/notifications` | ⏳ |
+| Confirmação ativa | `/patient-actions/{token}` (confirmar, cancelar, desistir), `/p/{token}`, `/notifications` | ✅ |
 | Reaproveitamento de vagas | `/patient-actions/{token}/accept-offer`, `/slot-offers` | ⏳ |
 | Indicadores | `/insights/indicators` | ⏳ |
 

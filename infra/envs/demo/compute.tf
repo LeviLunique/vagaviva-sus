@@ -176,7 +176,8 @@ resource "aws_instance" "app" {
   }
 
   metadata_options {
-    http_tokens = "required" # IMDSv2 obrigatorio
+    http_tokens                 = "required" # IMDSv2 obrigatorio
+    http_put_response_hop_limit = 2          # o SDK dentro do conteiner (rede bridge) precisa de 2 saltos
   }
 
   tags = { Name = local.name }
