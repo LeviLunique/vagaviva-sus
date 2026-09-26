@@ -21,6 +21,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  # AWS (SQS/SNS): região do ambiente; credenciais pela cadeia padrão (role da instância/task na AWS).
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:sa-east-1}
   # Registro de publicação de eventos (outbox): o Flyway é dono do schema; publicações concluídas
   # são apagadas; as pendentes são reenviadas quando a aplicação reinicia.
   modulith:
@@ -85,7 +90,38 @@ vagaviva:
     confirmation-deadline-before-start: P3D
     allocation-interval: PT5M
     allocation-batch-size: 200
+    confirmation-deadline-check-interval: PT5M
+  engagement:
+    channel-mode: SANDBOX            # SANDBOX | LIVE
+    sms:
+      enabled: false
+    whatsapp:
+      enabled: false
+      origination-phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+      template-name: vagaviva_aviso
+    queue-name: ${SQS_NOTIFICATIONS_QUEUE:vagaviva-local-notifications}
+    confirmation-reminder-before-deadline: PT24H
+    attendance-reminder-before-start: PT24H
+    reminder-interval: PT10M
   # Dados de demonstração (RF-11): ligados nos perfis local e demo.
   demo:
     enabled: false
     users-password: ${DEMO_USERS_PASSWORD:}
+
+# Proteção da chamada ao provedor de mensagens (SMS/WhatsApp): retentativa curta com backoff e
+# circuit breaker; a reentrega de longo prazo é da fila SQS (5 recebimentos ⇒ DLQ).
+resilience4j:
+  retry:
+    instances:
+      notification-channel:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+  circuitbreaker:
+    instances:
+      notification-channel:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
