@@ -24,6 +24,9 @@ public interface NotificationRepository {
 
     boolean existsForOffer(UUID offerId);
 
+    /** Retenção (SPEC §10): apaga o texto das mensagens criadas antes de {@code limit}. @return quantas */
+    int purgeBodiesOlderThan(Instant limit);
+
     /** Enviadas no período {@code [from, to)}, por canal. */
     Map<String, Long> countSentByChannel(Instant from, Instant to);
 
