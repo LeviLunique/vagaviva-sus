@@ -113,10 +113,12 @@ sequenceDiagram
   P1->>API: cancelar ("não posso ir")
   API->>API: Paciente A volta à fila na mesma posição
   API->>API: política de liberação<br/>≥ 5 dias: realoca pela fila · 2h–5 dias: encaixe · < 2h: perdida
-  API->>P2: oferta de encaixe (lote de 3, prazo de resposta)
-  P2->>API: aceitar
-  API->>API: atualização atômica da vaga (primeiro vence)
-  API-->>P2: demais recebem "vaga já preenchida"
+  API->>API: rodada: próximos da fila que aceitam encaixe<br/>(FOR UPDATE SKIP LOCKED, sem quem já recebeu oferta)
+  API->>P2: oferta de encaixe (lote de 3, prazo = mín(4 h, início − 2 h))
+  P2->>API: POST /patient-actions/{token}/accept-offer
+  API->>API: UPDATE slot ... WHERE status = 'OPEN_FOR_OFFERS'<br/>(primeiro vence; agendamento já CONFIRMED)
+  API-->>P2: demais recebem 409 "vaga já preenchida"
+  Note over API,P2: todos recusam ou o prazo vence ⇒ próxima rodada (até 5);<br/>sem ninguém elegível ou em cima da hora ⇒ vaga perdida
 ```
 
 ## 5. Estratégia de dados e consistência
@@ -124,6 +126,7 @@ sequenceDiagram
 - Eventos de domínio são gravados na mesma transação da mudança (registro de publicação do Spring Modulith — *outbox*, tabela `event_publication`) e reentregues em caso de falha. Listeners `@ApplicationModuleListener` rodam depois do commit, em outra thread e transação; publicações concluídas são apagadas (`completion-mode=DELETE`) e as pendentes são reenviadas quando a aplicação reinicia.
 - **Motor de alocação (F4)**: cada vaga é alocada numa transação própria — `SELECT ... FOR UPDATE SKIP LOCKED` na vaga e no próximo elegível da fila. Várias instâncias (ou o job e o evento de publicação ao mesmo tempo) alocam em paralelo sem repetir vaga nem paciente, e a falha de uma vaga não desfaz as outras. O índice único parcial `ux_appointment_live_slot` é a última barreira contra alocação dupla.
 - **Notificações (F5)**: o módulo `engagement` reage aos marcos do paciente (`ReferralQueued`, `AppointmentScheduled`, `AppointmentCancelled` pela unidade) criando a notificação e publicando `NotificationDispatchRequested` na mesma transação; um *relay* (`@ApplicationModuleListener`) envia o id à fila SQS — se o SQS falhar, a publicação fica pendente no `event_publication` e é reenviada. O consumidor é idempotente (notificação já `SENT` é ignorada), protege o provedor com Resilience4j (retentativa curta + circuit breaker) e, em falha, registra a tentativa e relança: a fila reentrega até 5 vezes e depois move para a DLQ. Canal efetivo: `SANDBOX` no modo de demonstração; em `LIVE`, WhatsApp (com aceite) ou SMS.
+- **Encaixe em cascata (F6, ADR-0013)**: o módulo `reallocation` reage a `SlotOpenedForOffers` abrindo rodadas de ofertas; cada rodada trava na fila os próximos que aceitam encaixe (mesma ordem oficial, sem quem já recebeu oferta da vaga nem quem tem outra oferta pendente — RN-16). O aceite é serializado pelo `UPDATE` condicional da vaga; o vencedor substitui as demais ofertas na mesma transação. O job de expiração (1 min, ShedLock) encerra ofertas vencidas e abre a rodada seguinte; recusa também avança a cascata. Quem aceita recebe a mensagem de "encaixe confirmado" com o link para liberar a vaga se não puder ir.
 - **Política de liberação (F5, RN-15)**: toda vaga devolvida pelo paciente ou por expiração segue a mesma regra — início ≥ 5 dias ⇒ volta a `AVAILABLE` para a fila; entre 2 h e 5 dias ⇒ `OPEN_FOR_OFFERS` (encaixe, F6); < 2 h ⇒ perdida. "Não posso ir" mantém a entrada original na fila; a 2ª não confirmação devolve o encaminhamento à regulação.
 - Consistência forte no núcleo (alocação, aceite de oferta) com bloqueio pessimista (`SKIP LOCKED`) e atualização condicional; consistência eventual para notificações e indicadores.
 - Leituras de alto volume (posição pública na fila, indicadores) usam *read models* recalculados/projetados (CQRS leve).

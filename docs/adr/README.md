@@ -13,3 +13,5 @@
 | [0009](0009-regiao-sa-east-1.md) | Região AWS sa-east-1 (São Paulo) | Aceita |
 | [0010](0010-single-tenant-por-ente.md) | Implantação single-tenant por ente | Aceita |
 | [0011](0011-gitflow-conventional-commits.md) | GitFlow e Conventional Commits | Aceita |
+| [0012](0012-perfil-demo-ec2-unica.md) | Perfil demo: EC2 única com liga/desliga automático | Aceita |
+| [0013](0013-aceite-de-encaixe-por-update-condicional.md) | Aceite de encaixe por atualização condicional da vaga | Aceita |
