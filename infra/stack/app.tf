@@ -343,7 +343,7 @@ locals {
     processors = {
       "batch/traces"    = { timeout = "1s", send_batch_size = 50 }
       "batch/metrics"   = { timeout = "60s" }
-      resourcedetection = { detectors = ["env", "ecs"] }
+      resource_detection = { detectors = ["env", "ecs"] }
     }
     exporters = {
       awsxray = { region = local.region }
@@ -357,8 +357,8 @@ locals {
     service = {
       extensions = ["health_check"]
       pipelines = {
-        traces  = { receivers = ["otlp"], processors = ["resourcedetection", "batch/traces"], exporters = ["awsxray"] }
-        metrics = { receivers = ["otlp"], processors = ["resourcedetection", "batch/metrics"], exporters = ["awsemf"] }
+        traces  = { receivers = ["otlp"], processors = ["resource_detection", "batch/traces"], exporters = ["awsxray"] }
+        metrics = { receivers = ["otlp"], processors = ["resource_detection", "batch/metrics"], exporters = ["awsemf"] }
       }
     }
   })

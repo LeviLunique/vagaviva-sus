@@ -30,3 +30,10 @@ variable "enable_execute_command" { type = bool }
 variable "spring_profiles" { type = string }
 variable "log_retention_days" { type = number }
 variable "enable_waf" { type = bool }
+
+# Teste de carga (F8): IPs liberados do WAF só durante a execução; passe com
+# ./scripts/aws/infra.sh <env> apply -var 'waf_allowlist_cidrs=["x.x.x.x/32"]'.
+variable "waf_allowlist_cidrs" {
+  type    = list(string)
+  default = []
+}

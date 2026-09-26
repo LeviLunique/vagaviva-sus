@@ -75,4 +75,5 @@ module "stack" {
   spring_profiles        = var.spring_profiles
   log_retention_days     = var.log_retention_days
   enable_waf             = var.enable_waf
+  waf_allowlist_cidrs    = var.waf_allowlist_cidrs
 }
