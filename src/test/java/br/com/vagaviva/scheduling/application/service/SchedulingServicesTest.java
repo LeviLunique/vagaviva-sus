@@ -363,7 +363,7 @@ class SchedulingServicesTest {
         Appointment appointment = aPendingAppointment();
         when(appointments.findById(appointment.id())).thenReturn(Optional.of(appointment));
 
-        assertThat(new SchedulingApiImpl(appointments).findAppointmentView(appointment.id()))
+        assertThat(new SchedulingApiImpl(appointments, queue, null, events, CLOCK).findAppointmentView(appointment.id()))
                 .hasValueSatisfying(view -> assertThat(view.status()).isEqualTo(AppointmentStatus.PENDING_CONFIRMATION));
         var policies = new SchedulingPolicies();
         assertThat(policies.slotLeadTimes(PROPERTIES).regularAllocation()).isEqualTo(Duration.ofDays(5));

@@ -14,3 +14,8 @@ Isolamento de falhas e de picos, operação gerenciada e custo mínimo; entrega 
 
 ## Alternativas consideradas
 Kafka/MSK ou RabbitMQ/Amazon MQ (operação e custo maiores, recursos como replay e roteamento avançado não são necessários no MVP).
+
+## Atualização (F5, 2026-09-26)
+- O módulo `spring-modulith-events-aws-sqs` não existe no Spring Modulith 2.x nem no Spring Cloud AWS 4.1. A externalização é feita por um *relay* (`SqsNotificationRelay`, `@ApplicationModuleListener` de `NotificationDispatchRequested`) que envia o id da notificação com o `SqsTemplate` — mesma garantia de *outbox*: o evento é gravado na transação da notificação e fica pendente até o envio à fila funcionar.
+- Resilience4j é usado pela API programática (`RetryRegistry`/`CircuitBreakerRegistry` da instância `notification-channel`), sem AOP.
+- Idempotência do consumidor: a notificação já `SENT` (ou `FAILED` após 5 tentativas) é ignorada; a criação é idempotente por marco do paciente.

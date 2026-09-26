@@ -21,3 +21,9 @@ vagaviva:
     # Nos testes a alocação é chamada explicitamente (ou pelo evento de publicação).
     allocation-interval: PT1H
     allocation-initial-delay: PT1H
+    confirmation-deadline-check-interval: PT1H
+    confirmation-deadline-initial-delay: PT1H
+  engagement:
+    queue-name: vagaviva-test-notifications
+    reminder-interval: PT1H
+    reminder-initial-delay: PT1H

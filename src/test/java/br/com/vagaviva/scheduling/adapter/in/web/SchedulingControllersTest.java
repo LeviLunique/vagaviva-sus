@@ -72,7 +72,7 @@ class SchedulingControllersTest {
                 .content("{\"unitId\":\"%s\",\"specialtyId\":\"%s\",\"professionalName\":\"X\",\"slots\":[]}"
                         .formatted(UNIT, UUID.randomUUID()))).hasStatus(422);
         assertThat(mvc.post().uri("/api/v1/slots").with(TestJwt.as(Role.ADMIN)).contentType(MediaType.APPLICATION_JSON)
-                .content(PUBLISH.formatted(UNIT, UUID.randomUUID()).replace("30", "3"))).hasStatus(422);
+                .content(PUBLISH.formatted(UNIT, UUID.randomUUID()).replace("\"durationMinutes\":30", "\"durationMinutes\":3"))).hasStatus(422);
         assertThat(mvc.post().uri("/api/v1/slots").with(TestJwt.as(Role.REQUESTER)).contentType(MediaType.APPLICATION_JSON)
                 .content(PUBLISH.formatted(UNIT, UUID.randomUUID()))).hasStatus(HttpStatus.FORBIDDEN);
         verifyNoInteractions(slots);

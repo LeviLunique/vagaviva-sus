@@ -24,6 +24,8 @@
         <springdoc.version>3.1.1</springdoc.version>
         <archunit.version>1.5.0</archunit.version>
         <shedlock.version>7.10.1</shedlock.version>
+        <spring-cloud-aws.version>4.1.1</spring-cloud-aws.version>
+        <resilience4j.version>2.4.0</resilience4j.version>
         <jacoco.version>0.8.15</jacoco.version>
         <!-- Gate de cobertura (linhas e branches) aplicado no `mvn verify` -->
         <coverage.line.minimum>0.80</coverage.line.minimum>
@@ -36,6 +38,13 @@
                 <groupId>org.springframework.modulith</groupId>
                 <artifactId>spring-modulith-bom</artifactId>
                 <version>${spring-modulith.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.awspring.cloud</groupId>
+                <artifactId>spring-cloud-aws-dependencies</artifactId>
+                <version>${spring-cloud-aws.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -95,6 +104,25 @@
         <dependency>
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-starter-jdbc</artifactId>
+        </dependency>
+
+        <!-- Mensageria e canais (F5): SQS para o envio assíncrono, SNS para SMS, WhatsApp via AWS End User Messaging Social -->
+        <dependency>
+            <groupId>io.awspring.cloud</groupId>
+            <artifactId>spring-cloud-aws-starter-sqs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.awspring.cloud</groupId>
+            <artifactId>spring-cloud-aws-starter-sns</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>socialmessaging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot4</artifactId>
+            <version>${resilience4j.version}</version>
         </dependency>
 
         <!-- Jobs agendados executados uma única vez no cluster -->

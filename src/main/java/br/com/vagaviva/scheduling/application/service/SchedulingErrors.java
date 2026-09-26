@@ -18,6 +18,10 @@ final class SchedulingErrors {
         return new NotFoundException("APPOINTMENT_NOT_FOUND", "Agendamento não encontrado.");
     }
 
+    static NotFoundException slotOfAppointmentMissing() {
+        return new NotFoundException("SLOT_NOT_FOUND", "A vaga do agendamento não foi encontrada.");
+    }
+
     static ForbiddenOperationException outOfUnit() {
         return new ForbiddenOperationException("SCHEDULING_OUT_OF_UNIT", "A vaga ou o agendamento pertence a outra unidade.");
     }

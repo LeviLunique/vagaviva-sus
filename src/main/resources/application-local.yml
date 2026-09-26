@@ -1,6 +1,14 @@
 # Perfil local (docker compose / IDE): carrega o seed de demonstração (unidades, especialidades e
 # pacientes fictícios) e cria os usuários de demonstração de cada papel (RF-11).
 spring:
+  # SQS local (ElasticMQ do docker compose); credenciais fictícias exigidas pelo SDK.
+  cloud:
+    aws:
+      credentials:
+        access-key: local
+        secret-key: local
+      sqs:
+        endpoint: ${SQS_ENDPOINT:http://localhost:9324}
   flyway:
     locations: classpath:db/migration,classpath:db/seed
 vagaviva:

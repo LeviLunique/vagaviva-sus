@@ -102,6 +102,18 @@ public final class Slot {
         moveTo(SlotStatus.MISSED, clock);
     }
 
+    /**
+     * RN-15: a vaga alocada é liberada para o destino decidido pela {@link ReleasePolicy} e conta
+     * mais uma liberação (a próxima alocação regular sai como {@code REALLOCATED}).
+     */
+    public void release(SlotStatus destination, Clock clock) {
+        if (status != SlotStatus.ALLOCATED) {
+            throw new ConflictException("SLOT_INVALID_STATE", "Só uma vaga alocada pode ser liberada.");
+        }
+        moveTo(destination, clock);
+        releaseCount++;
+    }
+
     /** RF-23: a unidade cancela a vaga (não há volta — o horário deixa de existir). */
     public void cancel(Clock clock) {
         moveTo(SlotStatus.CANCELLED, clock);
