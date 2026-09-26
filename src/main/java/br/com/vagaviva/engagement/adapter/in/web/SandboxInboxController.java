@@ -40,12 +40,12 @@ class SandboxInboxController {
         return queries.sandboxInbox(patientId, limit).stream().map(SandboxMessage::from).toList();
     }
 
-    record SandboxMessage(UUID id, UUID patientId, UUID appointmentId, NotificationType type, NotificationStatus status,
-            String body, Instant createdAt, Instant sentAt) {
+    record SandboxMessage(UUID id, UUID patientId, UUID appointmentId, UUID offerId, NotificationType type,
+            NotificationStatus status, String body, Instant createdAt, Instant sentAt) {
 
         static SandboxMessage from(Notification n) {
-            return new SandboxMessage(n.id(), n.patientId(), n.appointmentId(), n.type(), n.status(), n.body(),
-                    n.createdAt(), n.sentAt());
+            return new SandboxMessage(n.id(), n.patientId(), n.appointmentId(), n.offerId(), n.type(), n.status(),
+                    n.body(), n.createdAt(), n.sentAt());
         }
     }
 }

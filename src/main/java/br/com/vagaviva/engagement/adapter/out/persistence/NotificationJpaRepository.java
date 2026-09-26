@@ -13,6 +13,8 @@ interface NotificationJpaRepository extends JpaRepository<NotificationEntity, UU
 
     boolean existsByAppointmentIdAndType(UUID appointmentId, NotificationType type);
 
+    boolean existsByOfferId(UUID offerId);
+
     boolean existsByReferralIdAndTypeAndAppointmentIdIsNull(UUID referralId, NotificationType type);
 
     List<NotificationEntity> findByPatientIdAndChannelOrderByCreatedAtDesc(UUID patientId, NotificationChannel channel,

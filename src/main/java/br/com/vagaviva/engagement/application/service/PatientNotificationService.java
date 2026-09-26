@@ -17,10 +17,13 @@ import br.com.vagaviva.engagement.domain.TokenPurpose;
 import br.com.vagaviva.engagement.events.NotificationDispatchRequested;
 import br.com.vagaviva.patient.PatientApi;
 import br.com.vagaviva.patient.PatientSummary;
+import br.com.vagaviva.reallocation.OfferStatus;
+import br.com.vagaviva.reallocation.OfferView;
+import br.com.vagaviva.reallocation.ReallocationApi;
+import br.com.vagaviva.reallocation.events.SlotOffered;
 import br.com.vagaviva.regulation.QueueApi;
 import br.com.vagaviva.regulation.ReferralView;
 import br.com.vagaviva.regulation.events.ReferralQueued;
-import br.com.vagaviva.scheduling.AppointmentOrigin;
 import br.com.vagaviva.scheduling.AppointmentView;
 import br.com.vagaviva.scheduling.SchedulingApi;
 import br.com.vagaviva.scheduling.SchedulingApi.ReminderType;
@@ -57,6 +60,7 @@ class PatientNotificationService implements NotifyPatientUseCases {
     private final CatalogApi catalog;
     private final QueueApi queue;
     private final SchedulingApi scheduling;
+    private final ReallocationApi reallocation;
     private final MessageComposer composer;
     private final ChannelSelector channels;
     private final EngagementProperties properties;
@@ -66,7 +70,8 @@ class PatientNotificationService implements NotifyPatientUseCases {
     private final Clock clock;
 
     PatientNotificationService(NotificationRepository notifications, PatientActionTokenRepository tokens,
-            PatientApi patients, CatalogApi catalog, QueueApi queue, SchedulingApi scheduling, MessageComposer composer,
+            PatientApi patients, CatalogApi catalog, QueueApi queue, SchedulingApi scheduling, ReallocationApi reallocation,
+            MessageComposer composer,
             ChannelSelector channels, EngagementProperties properties, ApplicationEventPublisher events,
             PlatformTransactionManager transactionManager, @Value("${vagaviva.public-base-url}") String publicBaseUrl,
             Clock clock) {
@@ -76,6 +81,7 @@ class PatientNotificationService implements NotifyPatientUseCases {
         this.catalog = catalog;
         this.queue = queue;
         this.scheduling = scheduling;
+        this.reallocation = reallocation;
         this.composer = composer;
         this.channels = channels;
         this.properties = properties;
@@ -104,13 +110,13 @@ class PatientNotificationService implements NotifyPatientUseCases {
         });
     }
 
-    /** Encaixe aceito (F6) já nasce confirmado: não recebe o pedido de confirmação. */
+    /**
+     * Encaixe aceito (F6) já nasce confirmado: a mensagem não pede confirmação (sem prazo), mas leva o
+     * link para liberar a vaga se o paciente não puder ir (RN-12).
+     */
     @Override
     @Transactional
     public void appointmentScheduled(AppointmentScheduled event) {
-        if (event.origin() == AppointmentOrigin.SHORT_NOTICE_OFFER) {
-            return;
-        }
         scheduling.findAppointmentView(event.appointmentId())
                 .ifPresent(view -> notifyAppointment(view, NotificationType.APPOINTMENT_SCHEDULED));
     }
@@ -123,6 +129,32 @@ class PatientNotificationService implements NotifyPatientUseCases {
         }
         scheduling.findAppointmentView(event.appointmentId())
                 .ifPresent(view -> notifyAppointment(view, NotificationType.APPOINTMENT_CANCELLED_BY_UNIT));
+    }
+
+    /** RF-31: oferta de encaixe — link próprio, válido até o fim do prazo de resposta da oferta. */
+    @Override
+    @Transactional
+    public void slotOffered(SlotOffered event) {
+        if (notifications.existsForOffer(event.offerId())) {
+            return;
+        }
+        Optional<OfferView> offer = reallocation.findOfferView(event.offerId())
+                .filter(view -> view.status() == OfferStatus.PENDING);
+        if (offer.isEmpty()) {
+            return;
+        }
+        OfferView view = offer.get();
+        activePatient(view.patientId()).ifPresent(patient -> {
+            HealthUnitSummary unit = catalog.findUnit(view.unitId()).orElseThrow();
+            var issued = PatientActionToken.issue(TokenPurpose.OFFER, view.id(), view.expiresAt(), clock);
+            tokens.save(issued.token());
+            NotificationChannel channel = channels.channelFor(patient);
+            String body = composer.compose(NotificationType.SLOT_OFFER, new MessageData(patient.firstName(),
+                    labelOf(view.specialtyId()), null, view.startAt(), view.expiresAt(), unit.name(),
+                    publicBaseUrl + "/p/" + issued.raw()), channel);
+            save(Notification.create(patient.id(), null, view.id(), view.referralId(), NotificationType.SLOT_OFFER,
+                    channel, PatientActionToken.hash(patient.phone()), body, clock));
+        });
     }
 
     /** Lembretes das próximas 24 h; cada um na sua transação (um problema não impede os demais). */

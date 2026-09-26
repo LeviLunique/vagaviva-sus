@@ -13,12 +13,15 @@ import org.springframework.stereotype.Component;
 class EngagementAudit {
 
     static final String APPOINTMENT = "APPOINTMENT";
+    static final String SLOT_OFFER = "SLOT_OFFER";
     static final String PATIENT_LINK = "PATIENT_LINK";
     static final String LINK_VIEWED = "PATIENT_LINK_VIEWED";
     static final String LINK_REJECTED = "PATIENT_LINK_REJECTED";
     static final String PATIENT_CONFIRMED = "PATIENT_CONFIRMED";
     static final String PATIENT_CANCELLED = "PATIENT_CANCELLED";
     static final String PATIENT_WITHDREW = "PATIENT_WITHDREW";
+    static final String PATIENT_ACCEPTED_OFFER = "PATIENT_ACCEPTED_OFFER";
+    static final String PATIENT_DECLINED_OFFER = "PATIENT_DECLINED_OFFER";
 
     private final AuditTrail auditTrail;
 
@@ -28,6 +31,11 @@ class EngagementAudit {
 
     void patientAction(String action, UUID appointmentId, UUID tokenId, @Nullable String clientIp) {
         auditTrail.record(new AuditEntry(null, null, action, APPOINTMENT, appointmentId.toString(), AuditOutcome.SUCCESS,
+                clientIp, Map.of("tokenId", tokenId.toString())));
+    }
+
+    void offerAction(String action, UUID offerId, UUID tokenId, @Nullable String clientIp) {
+        auditTrail.record(new AuditEntry(null, null, action, SLOT_OFFER, offerId.toString(), AuditOutcome.SUCCESS,
                 clientIp, Map.of("tokenId", tokenId.toString())));
     }
 

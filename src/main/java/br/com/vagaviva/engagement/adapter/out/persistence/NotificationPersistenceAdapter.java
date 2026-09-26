@@ -49,6 +49,11 @@ class NotificationPersistenceAdapter implements NotificationRepository {
     }
 
     @Override
+    public boolean existsForOffer(UUID offerId) {
+        return repository.existsByOfferId(offerId);
+    }
+
+    @Override
     public Page<Notification> search(NotificationFilter filter, Pageable pageable) {
         Pageable newestFirst = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), NEWEST_FIRST);
         Specification<NotificationEntity> matching = (root, query, builder) -> {

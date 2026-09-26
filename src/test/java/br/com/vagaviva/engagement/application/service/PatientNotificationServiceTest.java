@@ -31,6 +31,11 @@ import br.com.vagaviva.engagement.domain.NotificationType;
 import br.com.vagaviva.engagement.domain.PatientActionToken;
 import br.com.vagaviva.engagement.events.NotificationDispatchRequested;
 import br.com.vagaviva.patient.PatientApi;
+import br.com.vagaviva.reallocation.ReallocationApi;
+import java.time.Instant;
+import br.com.vagaviva.reallocation.events.SlotOffered;
+import br.com.vagaviva.reallocation.OfferView;
+import br.com.vagaviva.reallocation.OfferStatus;
 import br.com.vagaviva.regulation.QueueApi;
 import br.com.vagaviva.regulation.ReferralStatus;
 import br.com.vagaviva.regulation.ReferralView;
@@ -67,6 +72,7 @@ class PatientNotificationServiceTest {
     @Mock CatalogApi catalog;
     @Mock QueueApi queue;
     @Mock SchedulingApi scheduling;
+    @Mock ReallocationApi reallocation;
     @Mock ApplicationEventPublisher events;
     @Mock PlatformTransactionManager transactionManager;
 
@@ -75,7 +81,7 @@ class PatientNotificationServiceTest {
     @BeforeEach
     void setUp() {
         var properties = properties(ChannelMode.SANDBOX, false, false);
-        service = new PatientNotificationService(notifications, tokens, patients, catalog, queue, scheduling,
+        service = new PatientNotificationService(notifications, tokens, patients, catalog, queue, scheduling, reallocation,
                 new MessageComposer(CLOCK.getZone()), new ChannelSelector(properties), properties, events,
                 transactionManager, "https://vagaviva.test/", CLOCK);
         lenient().when(notifications.save(any())).thenAnswer(call -> call.getArgument(0));
@@ -98,7 +104,7 @@ class PatientNotificationServiceTest {
         UUID referralId = UUID.randomUUID();
         when(patients.findSummary(patientId)).thenReturn(Optional.of(patient(patientId, false, true)));
         when(queue.findView(referralId)).thenReturn(Optional.of(new ReferralView(referralId, "VV-2026-0000123", patientId,
-                SPECIALTY, UNIT, ReferralStatus.WAITING, RiskClass.RED, false, "3550308")));
+                SPECIALTY, UNIT, ReferralStatus.WAITING, RiskClass.RED, false, "3550308", null)));
 
         service.referralQueued(new ReferralQueued(referralId, patientId, "VV-2026-0000123"));
 
@@ -143,10 +149,8 @@ class PatientNotificationServiceTest {
     }
 
     @Test
-    @DisplayName("encaixe aceito (F6) não pede confirmação; cancelamento só avisa quando foi a unidade (sem link)")
+    @DisplayName("cancelamento só avisa quando foi a unidade (sem link)")
     void shouldFilterSchedulingEvents() {
-        service.appointmentScheduled(new AppointmentScheduled(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                UUID.randomUUID(), UNIT, SPECIALTY, NOW, AppointmentOrigin.SHORT_NOTICE_OFFER, NOW, NOW));
         service.appointmentCancelled(new AppointmentCancelled(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 UUID.randomUUID(), NOW, AppointmentCancelled.Reason.PATIENT));
         verifyNoInteractions(scheduling);
@@ -179,5 +183,60 @@ class PatientNotificationServiceTest {
         lenient().when(notifications.existsForAppointment(eq(broken.id()), any())).thenThrow(new IllegalStateException("falha"));
 
         assertThat(service.sendDueReminders()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("RF-31: oferta de encaixe ⇒ token OFFER até o prazo da oferta e mensagem SLOT_OFFER com link; uma só vez")
+    void shouldNotifySlotOffer() {
+        UUID patientId = UUID.randomUUID();
+        Instant expires = NOW.plus(Duration.ofHours(4));
+        OfferView offer = new OfferView(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), patientId, UNIT,
+                SPECIALTY, NOW.plus(Duration.ofHours(26)), expires, 1, OfferStatus.PENDING);
+        when(reallocation.findOfferView(offer.id())).thenReturn(Optional.of(offer));
+        when(patients.findSummary(patientId)).thenReturn(Optional.of(patient(patientId, false, true)));
+        SlotOffered event = new SlotOffered(offer.id(), offer.slotId(), patientId, offer.referralId(), offer.startAt(),
+                expires);
+
+        service.slotOffered(event);
+
+        Notification notification = saved();
+        assertThat(notification.type()).isEqualTo(NotificationType.SLOT_OFFER);
+        assertThat(notification.offerId()).isEqualTo(offer.id());
+        assertThat(notification.body()).contains("Aceite até").containsPattern("/p/[A-Za-z0-9_-]{22}");
+        verify(tokens).save(argThat(token -> token.subjectId().equals(offer.id()) && token.expiresAt().equals(expires)));
+
+        when(notifications.existsForOffer(offer.id())).thenReturn(true);
+        service.slotOffered(event);
+        verify(notifications).save(any());
+    }
+
+    @Test
+    @DisplayName("oferta que já não está pendente (aceita por outro antes do envio) não gera mensagem")
+    void shouldSkipClosedOffer() {
+        UUID offerId = UUID.randomUUID();
+        when(reallocation.findOfferView(offerId)).thenReturn(Optional.of(new OfferView(offerId, UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), UNIT, SPECIALTY, NOW, NOW, 1, OfferStatus.SUPERSEDED)));
+
+        service.slotOffered(new SlotOffered(offerId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), NOW, NOW));
+
+        verify(notifications, never()).save(any());
+        verifyNoInteractions(tokens);
+    }
+
+    @Test
+    @DisplayName("encaixe aceito (F6): mensagem sem pedido de confirmação, com link para liberar a vaga")
+    void shouldNotifyAcceptedShortNotice() {
+        AppointmentView base = appointment(AppointmentStatus.CONFIRMED);
+        AppointmentView view = new AppointmentView(base.id(), base.slotId(), base.referralId(), base.patientId(), UNIT,
+                SPECIALTY, base.startAt(), AppointmentOrigin.SHORT_NOTICE_OFFER, AppointmentStatus.CONFIRMED, null);
+        when(scheduling.findAppointmentView(view.id())).thenReturn(Optional.of(view));
+        when(patients.findSummary(view.patientId())).thenReturn(Optional.of(patient(view.patientId(), false, true)));
+
+        service.appointmentScheduled(new AppointmentScheduled(view.id(), view.slotId(), view.referralId(),
+                view.patientId(), UNIT, SPECIALTY, view.startAt(), AppointmentOrigin.SHORT_NOTICE_OFFER, null, NOW));
+
+        Notification notification = saved();
+        assertThat(notification.body()).contains("encaixe confirmado").doesNotContain("Confirme")
+                .containsPattern("/p/[A-Za-z0-9_-]{22}");
     }
 }

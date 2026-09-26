@@ -91,6 +91,13 @@ vagaviva:
     allocation-interval: PT5M
     allocation-batch-size: 200
     confirmation-deadline-check-interval: PT5M
+  # Encaixe em cascata (RN-16/RN-17): lote de 3, até 5 rodadas, resposta em até 4 h.
+  reallocation:
+    offer-batch-size: 3
+    offer-max-rounds: 5
+    offer-response-window: PT4H
+    short-notice-min-lead: ${vagaviva.scheduling.short-notice-min-lead}
+    offer-expiration-check-interval: PT1M
   engagement:
     channel-mode: SANDBOX            # SANDBOX | LIVE
     sms:

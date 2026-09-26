@@ -54,8 +54,10 @@ public final class MessageComposer {
     private String compact(NotificationType type, MessageData d) {
         String label = d.label().noun();
         return PREFIX + switch (type) {
-            case APPOINTMENT_SCHEDULED -> "%s %s %s. Confirme ate %s: %s"
-                    .formatted(label, day(d.startAt()), time(d.startAt()), day(d.deadline()), LINK_MARK);
+            case APPOINTMENT_SCHEDULED -> d.deadline() == null
+                    ? "encaixe %s %s %s. Nao pode ir? Avise: %s".formatted(label, day(d.startAt()), time(d.startAt()), LINK_MARK)
+                    : "%s %s %s. Confirme ate %s: %s"
+                            .formatted(label, day(d.startAt()), time(d.startAt()), day(d.deadline()), LINK_MARK);
             case CONFIRMATION_REMINDER -> "confirme %s de %s %s ate %s: %s"
                     .formatted(label, day(d.startAt()), time(d.startAt()), day(d.deadline()), LINK_MARK);
             case ATTENDANCE_REMINDER -> "%s amanha %s. Nao pode ir? %s".formatted(label, time(d.startAt()), LINK_MARK);
@@ -70,9 +72,13 @@ public final class MessageComposer {
         return PREFIX + switch (type) {
             case REFERRAL_QUEUED -> "%s, seu pedido %s entrou na fila. Avisaremos quando %s for %s."
                     .formatted(d.firstName(), d.protocol(), label.withPossessive(), label.agree("agendad"));
-            case APPOINTMENT_SCHEDULED -> "%s, %s em %s às %s, %s. Confirme até %s: %s"
-                    .formatted(d.firstName(), label.noun(), day(d.startAt()), time(d.startAt()), unit,
-                            day(d.deadline()), LINK_MARK);
+            case APPOINTMENT_SCHEDULED -> d.deadline() == null
+                    // Encaixe aceito (F6): já confirmado — só o link para liberar a vaga se não puder ir.
+                    ? "%s, encaixe confirmado: %s em %s às %s, %s. Não pode ir? Avise: %s"
+                            .formatted(d.firstName(), label.noun(), day(d.startAt()), time(d.startAt()), unit, LINK_MARK)
+                    : "%s, %s em %s às %s, %s. Confirme até %s: %s"
+                            .formatted(d.firstName(), label.noun(), day(d.startAt()), time(d.startAt()), unit,
+                                    day(d.deadline()), LINK_MARK);
             case CONFIRMATION_REMINDER -> "confirme %s de %s às %s até %s, ou a vaga irá para outro paciente: %s"
                     .formatted(label.withPossessive(), day(d.startAt()), time(d.startAt()), day(d.deadline()), LINK_MARK);
             case ATTENDANCE_REMINDER -> "lembrete: %s amanhã às %s, %s. Não pode ir? Libere a vaga: %s"

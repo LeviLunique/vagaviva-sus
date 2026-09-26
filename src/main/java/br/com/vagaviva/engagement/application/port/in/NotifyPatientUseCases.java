@@ -1,5 +1,6 @@
 package br.com.vagaviva.engagement.application.port.in;
 
+import br.com.vagaviva.reallocation.events.SlotOffered;
 import br.com.vagaviva.regulation.events.ReferralQueued;
 import br.com.vagaviva.scheduling.events.AppointmentCancelled;
 import br.com.vagaviva.scheduling.events.AppointmentScheduled;
@@ -12,6 +13,8 @@ public interface NotifyPatientUseCases {
     void appointmentScheduled(AppointmentScheduled event);
 
     void appointmentCancelled(AppointmentCancelled event);
+
+    void slotOffered(SlotOffered event);
 
     /** Lembretes de confirmação e de véspera (RN-11). @return quantos foram criados */
     int sendDueReminders();

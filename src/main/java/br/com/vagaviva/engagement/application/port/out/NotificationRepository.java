@@ -20,6 +20,8 @@ public interface NotificationRepository {
 
     boolean existsForReferral(UUID referralId, NotificationType type);
 
+    boolean existsForOffer(UUID offerId);
+
     /** Mais recentes primeiro. */
     Page<Notification> search(NotificationFilter filter, Pageable pageable);
 

@@ -24,6 +24,7 @@ class SchedulingAudit {
     static final String APPOINTMENT_NO_SHOW = "APPOINTMENT_NO_SHOW";
     static final String APPOINTMENT_EXPIRED = "APPOINTMENT_EXPIRED";
     static final String SLOT_RELEASED = "SLOT_RELEASED";
+    static final String SLOT_LOST = "SLOT_LOST";
 
     private final AuditTrail auditTrail;
 

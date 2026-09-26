@@ -2,7 +2,8 @@ package br.com.vagaviva.engagement.adapter.in.web;
 
 import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases;
 import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.ActionResult;
-import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.PatientAppointmentView;
+import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.OfferActionResult;
+import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.PatientLinkView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Ações do paciente (público)", description = "Link recebido por SMS/WhatsApp: ver, confirmar, cancelar ou desistir — sem login (RF-26)")
+@Tag(name = "Ações do paciente (público)", description = "Link recebido por SMS/WhatsApp: ver, confirmar, cancelar ou desistir do agendamento; aceitar ou recusar oferta de encaixe — sem login (RF-26, RF-32)")
 @RestController
 @RequestMapping("/api/v1/patient-actions/{token}")
 @SecurityRequirements
@@ -32,7 +33,7 @@ class PatientActionController {
     @Operation(summary = "Ver o agendamento", description = "Primeiro nome, rótulo genérico (consulta/exame), data, unidade, prazo e ações permitidas agora.")
     @ApiResponse(responseCode = "200", description = "Agendamento")
     @GetMapping
-    PatientAppointmentView view(@PathVariable String token, HttpServletRequest http) {
+    PatientLinkView view(@PathVariable String token, HttpServletRequest http) {
         return actions.view(token, http.getRemoteAddr());
     }
 
@@ -59,5 +60,21 @@ class PatientActionController {
     @PostMapping("/withdraw")
     ActionResult withdraw(@PathVariable String token, HttpServletRequest http) {
         return actions.withdraw(token, http.getRemoteAddr());
+    }
+
+    @Operation(summary = "Aceitar a oferta de encaixe", description = "O primeiro aceite fica com a vaga (agendamento já confirmado, RN-18).")
+    @ApiResponse(responseCode = "200", description = "CONFIRMED, com o appointmentId")
+    @ApiResponse(responseCode = "409", description = "Vaga já preenchida (SLOT_ALREADY_FILLED) ou oferta encerrada (OFFER_NOT_PENDING)", content = @Content(mediaType = "application/problem+json"))
+    @PostMapping("/accept-offer")
+    OfferActionResult acceptOffer(@PathVariable String token, HttpServletRequest http) {
+        return actions.acceptOffer(token, http.getRemoteAddr());
+    }
+
+    @Operation(summary = "Recusar a oferta de encaixe", description = "Não tira o paciente da fila; a vaga segue para a próxima rodada.")
+    @ApiResponse(responseCode = "200", description = "DECLINED")
+    @ApiResponse(responseCode = "409", description = "Oferta já encerrada (OFFER_NOT_PENDING)", content = @Content(mediaType = "application/problem+json"))
+    @PostMapping("/decline-offer")
+    OfferActionResult declineOffer(@PathVariable String token, HttpServletRequest http) {
+        return actions.declineOffer(token, http.getRemoteAddr());
     }
 }

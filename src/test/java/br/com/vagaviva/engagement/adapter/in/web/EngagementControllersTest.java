@@ -13,12 +13,14 @@ import br.com.vagaviva.engagement.application.port.in.NotificationQueryUseCases;
 import br.com.vagaviva.engagement.application.port.in.NotificationQueryUseCases.NotificationFilter;
 import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases;
 import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.ActionResult;
+import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.OfferActionResult;
 import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.PatientAction;
-import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.PatientAppointmentView;
+import br.com.vagaviva.engagement.application.port.in.PatientActionUseCases.PatientLinkView;
 import br.com.vagaviva.engagement.domain.Notification;
 import br.com.vagaviva.engagement.domain.NotificationChannel;
 import br.com.vagaviva.engagement.domain.NotificationType;
 import br.com.vagaviva.scheduling.AppointmentStatus;
+import br.com.vagaviva.shared.domain.ConflictException;
 import br.com.vagaviva.shared.domain.ForbiddenOperationException;
 import br.com.vagaviva.shared.domain.GoneException;
 import br.com.vagaviva.shared.domain.NotFoundException;
@@ -51,8 +53,8 @@ class EngagementControllersTest {
     @Test
     @DisplayName("RF-26: link do paciente sem login — ver e agir; o IP vai para a auditoria")
     void shouldServePatientLinkWithoutLogin() {
-        when(actions.view(eq(TOKEN), any())).thenReturn(new PatientAppointmentView("CONSULTATION", "Maria", "consulta",
-                NOW, "AME Zona Norte", "Av. Norte, 1500", AppointmentStatus.PENDING_CONFIRMATION, NOW,
+        when(actions.view(eq(TOKEN), any())).thenReturn(new PatientLinkView("APPOINTMENT", "Maria", "consulta",
+                NOW, "AME Zona Norte", "Av. Norte, 1500", "PENDING_CONFIRMATION", NOW, null,
                 List.of(PatientAction.CONFIRM, PatientAction.CANCEL)));
         when(actions.confirm(eq(TOKEN), any())).thenReturn(new ActionResult(AppointmentStatus.CONFIRMED, false));
         when(actions.cancel(eq(TOKEN), any())).thenReturn(new ActionResult(AppointmentStatus.CANCELLED_BY_PATIENT, true));
@@ -127,5 +129,24 @@ class EngagementControllersTest {
         assertThat(mvc.get().uri("/api/v1/dev/sandbox/messages?patientId={p}", patient)
                 .with(TestJwt.as(Role.SCHEDULER, UUID.randomUUID(), UUID.randomUUID()))).hasStatus(HttpStatus.FORBIDDEN);
         verifyNoInteractions(actions);
+    }
+
+    @Test
+    @DisplayName("RF-32: aceitar oferta ⇒ 200 CONFIRMED + appointmentId; vaga já preenchida ⇒ 409; recusar ⇒ 200 DECLINED")
+    void shouldAnswerOffers() {
+        UUID appointment = UUID.randomUUID();
+        when(actions.acceptOffer(eq(TOKEN), any())).thenReturn(new OfferActionResult("CONFIRMED", appointment));
+        when(actions.acceptOffer(eq("BbCdEfGhIjKlMnOpQrStUv"), any()))
+                .thenThrow(new ConflictException("SLOT_ALREADY_FILLED", "Vaga já preenchida por outro paciente."));
+        when(actions.declineOffer(eq(TOKEN), any())).thenReturn(new OfferActionResult("DECLINED", null));
+
+        var accepted = mvc.post().uri("/api/v1/patient-actions/{t}/accept-offer", TOKEN).exchange();
+        assertThat(accepted).hasStatusOk();
+        assertThat(accepted).bodyJson().extractingPath("$.status").isEqualTo("CONFIRMED");
+        assertThat(accepted).bodyJson().extractingPath("$.appointmentId").isEqualTo(appointment.toString());
+        assertThat(mvc.post().uri("/api/v1/patient-actions/{t}/accept-offer", "BbCdEfGhIjKlMnOpQrStUv"))
+                .hasStatus(HttpStatus.CONFLICT).bodyJson().extractingPath("$.code").isEqualTo("SLOT_ALREADY_FILLED");
+        assertThat(mvc.post().uri("/api/v1/patient-actions/{t}/decline-offer", TOKEN)).hasStatusOk().bodyJson()
+                .extractingPath("$.status").isEqualTo("DECLINED");
     }
 }

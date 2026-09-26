@@ -10,6 +10,10 @@ import br.com.vagaviva.engagement.domain.PatientActionToken;
 import br.com.vagaviva.engagement.domain.TokenPurpose;
 import br.com.vagaviva.patient.PatientApi;
 import br.com.vagaviva.patient.PatientSummary;
+import br.com.vagaviva.reallocation.OfferStatus;
+import br.com.vagaviva.reallocation.OfferView;
+import br.com.vagaviva.reallocation.ReallocationApi;
+import br.com.vagaviva.reallocation.ReallocationApi.AcceptedOffer;
 import br.com.vagaviva.scheduling.AppointmentStatus;
 import br.com.vagaviva.scheduling.AppointmentView;
 import br.com.vagaviva.scheduling.SchedulingApi;
@@ -27,8 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * RF-26: o link do paciente. Token inexistente ⇒ 404; expirado ⇒ 410 — ambos auditados sem expor
- * nada do agendamento. As ações delegam à agenda, que aplica prazo, estado e liberação da vaga.
+ * RF-26/RF-32: o link do paciente. Token inexistente (ou de outro tipo) ⇒ 404; expirado ⇒ 410 —
+ * ambos auditados sem expor nada. As ações delegam à agenda (agendamento) ou ao encaixe (oferta).
  */
 @Service
 class PatientActionService implements PatientActionUseCases {
@@ -37,15 +41,17 @@ class PatientActionService implements PatientActionUseCases {
 
     private final PatientActionTokenRepository tokens;
     private final SchedulingApi scheduling;
+    private final ReallocationApi reallocation;
     private final PatientApi patients;
     private final CatalogApi catalog;
     private final EngagementAudit audit;
     private final Clock clock;
 
-    PatientActionService(PatientActionTokenRepository tokens, SchedulingApi scheduling, PatientApi patients,
-            CatalogApi catalog, EngagementAudit audit, Clock clock) {
+    PatientActionService(PatientActionTokenRepository tokens, SchedulingApi scheduling, ReallocationApi reallocation,
+            PatientApi patients, CatalogApi catalog, EngagementAudit audit, Clock clock) {
         this.tokens = tokens;
         this.scheduling = scheduling;
+        this.reallocation = reallocation;
         this.patients = patients;
         this.catalog = catalog;
         this.audit = audit;
@@ -54,18 +60,11 @@ class PatientActionService implements PatientActionUseCases {
 
     @Override
     @Transactional(noRollbackFor = {NotFoundException.class, GoneException.class})
-    public PatientAppointmentView view(String token, @Nullable String clientIp) {
-        PatientActionToken actionToken = resolve(token, clientIp);
-        AppointmentView appointment = scheduling.findAppointmentView(actionToken.subjectId())
-                .orElseThrow(EngagementErrors::linkNotFound);
-        String firstName = patients.findSummary(appointment.patientId()).map(PatientSummary::firstName).orElse("");
-        HealthUnitSummary unit = catalog.findUnit(appointment.unitId()).orElseThrow();
-        CareLabel label = catalog.findSpecialty(appointment.specialtyId())
-                .map(s -> s.type() == SpecialtyType.EXAM ? CareLabel.EXAM : CareLabel.CONSULTATION)
-                .orElse(CareLabel.CONSULTATION);
-        audit.patientAction(EngagementAudit.LINK_VIEWED, appointment.id(), actionToken.id(), clientIp);
-        return new PatientAppointmentView("APPOINTMENT", firstName, label.noun(), appointment.startAt(), unit.name(),
-                unit.address(), appointment.status(), appointment.confirmationDeadline(), allowedActions(appointment));
+    public PatientLinkView view(String token, @Nullable String clientIp) {
+        PatientActionToken actionToken = resolve(token, clientIp, null);
+        return actionToken.purpose() == TokenPurpose.OFFER
+                ? offerView(actionToken, clientIp)
+                : appointmentView(actionToken, clientIp);
     }
 
     @Override
@@ -86,20 +85,67 @@ class PatientActionService implements PatientActionUseCases {
         return act(token, clientIp, EngagementAudit.PATIENT_WITHDREW, scheduling::withdraw, false);
     }
 
+    @Override
+    @Transactional(noRollbackFor = {NotFoundException.class, GoneException.class})
+    public OfferActionResult acceptOffer(String token, @Nullable String clientIp) {
+        PatientActionToken actionToken = resolve(token, clientIp, TokenPurpose.OFFER);
+        AcceptedOffer accepted = reallocation.accept(actionToken.subjectId());
+        used(actionToken);
+        audit.offerAction(EngagementAudit.PATIENT_ACCEPTED_OFFER, accepted.offerId(), actionToken.id(), clientIp);
+        return new OfferActionResult(AppointmentStatus.CONFIRMED.name(), accepted.appointmentId());
+    }
+
+    @Override
+    @Transactional(noRollbackFor = {NotFoundException.class, GoneException.class})
+    public OfferActionResult declineOffer(String token, @Nullable String clientIp) {
+        PatientActionToken actionToken = resolve(token, clientIp, TokenPurpose.OFFER);
+        OfferView declined = reallocation.decline(actionToken.subjectId());
+        used(actionToken);
+        audit.offerAction(EngagementAudit.PATIENT_DECLINED_OFFER, declined.id(), actionToken.id(), clientIp);
+        return new OfferActionResult(declined.status().name(), null);
+    }
+
+    private PatientLinkView appointmentView(PatientActionToken actionToken, @Nullable String clientIp) {
+        AppointmentView appointment = scheduling.findAppointmentView(actionToken.subjectId())
+                .orElseThrow(EngagementErrors::linkNotFound);
+        HealthUnitSummary unit = catalog.findUnit(appointment.unitId()).orElseThrow();
+        audit.patientAction(EngagementAudit.LINK_VIEWED, appointment.id(), actionToken.id(), clientIp);
+        return new PatientLinkView(TokenPurpose.APPOINTMENT.name(), firstName(appointment.patientId()),
+                labelOf(appointment.specialtyId()).noun(), appointment.startAt(), unit.name(), unit.address(),
+                appointment.status().name(), appointment.confirmationDeadline(), null, allowedActions(appointment));
+    }
+
+    private PatientLinkView offerView(PatientActionToken actionToken, @Nullable String clientIp) {
+        OfferView offer = reallocation.findOfferView(actionToken.subjectId()).orElseThrow(EngagementErrors::linkNotFound);
+        HealthUnitSummary unit = catalog.findUnit(offer.unitId()).orElseThrow();
+        audit.offerAction(EngagementAudit.LINK_VIEWED, offer.id(), actionToken.id(), clientIp);
+        List<PatientAction> actions = offer.status() == OfferStatus.PENDING && clock.instant().isBefore(offer.expiresAt())
+                ? List.of(PatientAction.ACCEPT_OFFER, PatientAction.DECLINE_OFFER)
+                : List.of();
+        return new PatientLinkView(TokenPurpose.OFFER.name(), firstName(offer.patientId()),
+                labelOf(offer.specialtyId()).noun(), offer.startAt(), unit.name(), unit.address(),
+                offer.status().name(), null, offer.expiresAt(), actions);
+    }
+
     private ActionResult act(String token, @Nullable String clientIp, String auditAction,
             Function<UUID, AppointmentView> action, boolean backToQueue) {
-        PatientActionToken actionToken = resolve(token, clientIp);
+        PatientActionToken actionToken = resolve(token, clientIp, TokenPurpose.APPOINTMENT);
         AppointmentView result = action.apply(actionToken.subjectId());
-        actionToken.markUsed(clock);
-        tokens.save(actionToken);
+        used(actionToken);
         audit.patientAction(auditAction, result.id(), actionToken.id(), clientIp);
         return new ActionResult(result.status(), backToQueue);
     }
 
-    private PatientActionToken resolve(String token, @Nullable String clientIp) {
+    private void used(PatientActionToken actionToken) {
+        actionToken.markUsed(clock);
+        tokens.save(actionToken);
+    }
+
+    /** @param purpose tipo exigido pela ação, ou {@code null} para aceitar qualquer um (visualização) */
+    private PatientActionToken resolve(String token, @Nullable String clientIp, @Nullable TokenPurpose purpose) {
         PatientActionToken actionToken = token != null && TOKEN_FORMAT.matcher(token).matches()
-                ? tokens.findByHash(PatientActionToken.hash(token)).filter(t -> t.purpose() == TokenPurpose.APPOINTMENT)
-                        .orElse(null)
+                ? tokens.findByHash(PatientActionToken.hash(token))
+                        .filter(t -> purpose == null || t.purpose() == purpose).orElse(null)
                 : null;
         if (actionToken == null) {
             audit.rejectedLink("NOT_FOUND", clientIp);
@@ -110,6 +156,16 @@ class PatientActionService implements PatientActionUseCases {
             throw EngagementErrors.linkExpired();
         }
         return actionToken;
+    }
+
+    private String firstName(UUID patientId) {
+        return patients.findSummary(patientId).map(PatientSummary::firstName).orElse("");
+    }
+
+    private CareLabel labelOf(UUID specialtyId) {
+        return catalog.findSpecialty(specialtyId)
+                .map(s -> s.type() == SpecialtyType.EXAM ? CareLabel.EXAM : CareLabel.CONSULTATION)
+                .orElse(CareLabel.CONSULTATION);
     }
 
     /** RN-12: confirmar até o prazo; cancelar e desistir até o início. */

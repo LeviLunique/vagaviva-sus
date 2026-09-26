@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import br.com.vagaviva.engagement.application.port.in.NotifyPatientUseCases;
+import br.com.vagaviva.reallocation.events.SlotOffered;
 import br.com.vagaviva.regulation.events.ReferralQueued;
 import br.com.vagaviva.scheduling.AppointmentOrigin;
 import br.com.vagaviva.scheduling.events.AppointmentCancelled;
@@ -34,5 +35,9 @@ class PatientMilestoneListenerTest {
         verify(notify).referralQueued(queued);
         verify(notify).appointmentScheduled(scheduled);
         verify(notify).appointmentCancelled(cancelled);
+
+        var offered = new SlotOffered(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), now, now);
+        listener.on(offered);
+        verify(notify).slotOffered(offered);
     }
 }

@@ -131,6 +131,8 @@ Base `/api/v1`. Implementados até o momento:
 | GET | `/api/v1/patient-actions/{token}` | **Público (link do paciente)**: primeiro nome, "consulta"/"exame", data, unidade, prazo e ações permitidas; `404` link inválido, `410` expirado |
 | POST | `/api/v1/patient-actions/{token}/confirm` · `/cancel` · `/withdraw` | **Público**: confirmar (até o prazo, idempotente), "não posso ir" (volta à fila na mesma posição) e "não preciso mais" (sai da fila) |
 | GET | `/p/{token}` | **Público**: link curto das mensagens → `302` para `/api/v1/patient-actions/{token}` |
+| POST | `/api/v1/patient-actions/{token}/accept-offer` · `/decline-offer` | **Público**: aceitar a oferta de encaixe (o primeiro aceite fica com a vaga; os demais recebem `409 SLOT_ALREADY_FILLED`) ou recusar (continua na fila) |
+| GET | `/api/v1/slot-offers` | Ofertas de encaixe por rodada, status e respostas (filtros `slotId`, `status`) — ADMIN, REGULATOR; SCHEDULER informando uma vaga da própria unidade |
 | GET | `/api/v1/notifications` | Log de entregas (status, canal, tentativas — sem texto nem telefone) — ADMIN; SCHEDULER informando um `appointmentId` da própria unidade |
 | GET | `/api/v1/dev/sandbox/messages` | Demonstração: mensagens do canal SANDBOX de um paciente, com o link — ADMIN (só com `vagaviva.demo.enabled`) |
 | POST | `/api/v1/dev/appointments/{id}/expire-confirmation` | Demonstração: expira agora o prazo de confirmação (vaga liberada, paciente de volta à fila) — ADMIN |
@@ -154,7 +156,7 @@ Módulos do MVP e status de entrega:
 | Regulação e transparência | `/referrals`, `/queues/{specialtyId}`, `/public/queue-position`, `/public/queue-stats` | ✅ |
 | Agenda e alocação | `/slots`, `/allocation-runs`, `/appointments` (check-in, falta) | ✅ |
 | Confirmação ativa | `/patient-actions/{token}` (confirmar, cancelar, desistir), `/p/{token}`, `/notifications` | ✅ |
-| Reaproveitamento de vagas | `/patient-actions/{token}/accept-offer`, `/slot-offers` | ⏳ |
+| Reaproveitamento de vagas | `/patient-actions/{token}/accept-offer`, `/decline-offer`, `/slot-offers` | ✅ |
 | Indicadores | `/insights/indicators` | ⏳ |
 
 ## Modelagem e banco de dados

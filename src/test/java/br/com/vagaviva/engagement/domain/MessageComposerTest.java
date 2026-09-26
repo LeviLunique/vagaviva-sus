@@ -94,6 +94,22 @@ class MessageComposerTest {
         assertThat(text).isEqualTo("VagaViva SUS: Maria, vaga de consulta em 05/10 as 08:00, AME. Aceite ate 15:00: " + LINK);
     }
 
+    @Test
+    @DisplayName("encaixe aceito (F6): sem pedido de confirmação, com link para liberar a vaga")
+    void shortNoticeAppointmentHasNoDeadline() throws IOException {
+        var accepted = new MessageData("Maria", CareLabel.CONSULTATION, null, Instant.parse("2026-10-05T11:00:00Z"),
+                null, "UBS Vila Esperança", LINK);
+
+        String sms = composer.compose(NotificationType.APPOINTMENT_SCHEDULED, accepted, NotificationChannel.SMS);
+
+        assertThat(sms).isEqualTo(golden("appointment_scheduled-short_notice-sms")).doesNotContain("Confirme");
+        String longLink = "https://" + "x".repeat(120) + ".test/p/AbCdEfGhIjKlMnOpQrStUv";
+        assertThat(composer.compose(NotificationType.APPOINTMENT_SCHEDULED, new MessageData("Maria",
+                CareLabel.CONSULTATION, null, Instant.parse("2026-10-05T11:00:00Z"), null, "UBS", longLink),
+                NotificationChannel.SMS)).startsWith("VagaViva SUS: encaixe consulta 05/10 08:00. Nao pode ir? Avise: ")
+                .endsWith(longLink);
+    }
+
     private static String golden(String name) throws IOException {
         try (InputStream in = MessageComposerTest.class.getResourceAsStream("/messages/" + name + ".txt")) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
