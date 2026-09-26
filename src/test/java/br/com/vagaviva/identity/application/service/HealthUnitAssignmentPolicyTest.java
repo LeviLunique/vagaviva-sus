@@ -33,7 +33,7 @@ class HealthUnitAssignmentPolicyTest {
 
     private void unitIs(HealthUnitType type, boolean active) {
         when(catalog.findUnit(UNIT)).thenReturn(Optional.of(
-                new HealthUnitSummary(UNIT, "1234567", "Unidade", type, "3550308", "São Paulo", "Rua 1", active)));
+                new HealthUnitSummary(UNIT, "1234567", "Unidade", type, "3550308", "São Paulo", "Rua 1", null, active)));
     }
 
     @ParameterizedTest(name = "{0} em {1} ⇒ permitido")

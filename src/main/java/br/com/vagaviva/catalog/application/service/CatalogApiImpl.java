@@ -10,6 +10,7 @@ import br.com.vagaviva.catalog.domain.Specialty;
 import br.com.vagaviva.shared.domain.MunicipalityCode;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +44,8 @@ class CatalogApiImpl implements CatalogApi {
 
     private static HealthUnitSummary summary(HealthUnit unit) {
         return new HealthUnitSummary(unit.id(), unit.cnes().value(), unit.name(), unit.type(),
-                unit.municipalityCode().value(), unit.municipalityName(), unit.address(), unit.isActive());
+                unit.municipalityCode().value(), unit.municipalityName(), unit.address(),
+                unit.serviceArea().stream().map(MunicipalityCode::value).collect(Collectors.toSet()), unit.isActive());
     }
 
     private static SpecialtySummary summary(Specialty specialty) {

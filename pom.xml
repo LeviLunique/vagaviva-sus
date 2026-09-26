@@ -92,6 +92,10 @@
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-starter-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-jdbc</artifactId>
+        </dependency>
 
         <!-- Jobs agendados executados uma única vez no cluster -->
         <dependency>
@@ -150,6 +154,12 @@
         <dependency>
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Scenario (Spring Modulith) espera eventos assíncronos com Awaitility -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

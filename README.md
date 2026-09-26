@@ -121,6 +121,11 @@ Base `/api/v1`. Implementados até o momento:
 | POST | `/api/v1/queues/snapshot` | Recalcular agora o snapshot da transparência (automático a cada 5 min) — ADMIN |
 | POST | `/api/v1/public/queue-position` | **Público**: posição na fila por protocolo + data de nascimento (no corpo) |
 | GET | `/api/v1/public/queue-stats` | **Público**: aguardando por classe de risco, espera média e vazão por especialidade |
+| POST · GET | `/api/v1/slots` | Publicar vagas em lote (SCHEDULER da unidade, ADMIN) e consultar a agenda |
+| POST | `/api/v1/slots/{id}/cancel` | Cancelar vaga; paciente agendado volta à fila na mesma posição |
+| POST | `/api/v1/allocation-runs` | Executar a alocação agora (também automática a cada 5 min e após cada publicação) — ADMIN, SCHEDULER |
+| GET | `/api/v1/appointments` · `/api/v1/appointments/{id}` | Agendamentos da unidade (filtros `unitId`, `date`, `status`); leitura auditada |
+| POST | `/api/v1/appointments/{id}/check-in` · `/no-show` | Comparecimento (no dia) ou falta (após o início) — SCHEDULER da unidade |
 
 ### Autenticação
 ```bash
@@ -139,7 +144,7 @@ Módulos do MVP e status de entrega:
 | Identidade e auditoria | `/auth/login`, `/auth/me`, `/users`, `/audit-events` | ✅ |
 | Cadastros | `/health-units`, `/specialties`, `/patients` | ✅ |
 | Regulação e transparência | `/referrals`, `/queues/{specialtyId}`, `/public/queue-position`, `/public/queue-stats` | ✅ |
-| Agenda e alocação | `/slots`, `/allocation-runs`, `/appointments` (check-in, falta) | ⏳ |
+| Agenda e alocação | `/slots`, `/allocation-runs`, `/appointments` (check-in, falta) | ✅ |
 | Confirmação ativa | `/patient-actions/{token}` (confirmar, cancelar, desistir), `/p/{token}`, `/notifications` | ⏳ |
 | Reaproveitamento de vagas | `/patient-actions/{token}/accept-offer`, `/slot-offers` | ⏳ |
 | Indicadores | `/insights/indicators` | ⏳ |

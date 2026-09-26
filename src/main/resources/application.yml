@@ -21,6 +21,15 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  # Registro de publicação de eventos (outbox): o Flyway é dono do schema; publicações concluídas
+  # são apagadas; as pendentes são reenviadas quando a aplicação reinicia.
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false
+      completion-mode: DELETE
+      republish-outstanding-events-on-restart: true
 
 server:
   port: ${SERVER_PORT:8080}
@@ -70,6 +79,12 @@ vagaviva:
     queue-snapshot-interval: PT5M
     throughput-window: P30D
     max-missed-confirmations: 2
+  scheduling:
+    regular-allocation-min-lead: P5D
+    short-notice-min-lead: PT2H
+    confirmation-deadline-before-start: P3D
+    allocation-interval: PT5M
+    allocation-batch-size: 200
   # Dados de demonstração (RF-11): ligados nos perfis local e demo.
   demo:
     enabled: false
