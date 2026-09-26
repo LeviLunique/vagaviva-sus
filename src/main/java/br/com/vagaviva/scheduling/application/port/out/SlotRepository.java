@@ -28,4 +28,13 @@ public interface SlotRepository {
     Optional<Slot> lockAvailable(UUID id);
 
     Page<Slot> search(SlotFilter filter, Pageable pageable);
+
+    /**
+     * Toma a vaga em oferta de encaixe: {@code UPDATE ... WHERE status = 'OPEN_FOR_OFFERS'}. Sob
+     * concorrência, só uma transação altera a linha; as demais esperam o commit e não encontram mais a
+     * vaga em oferta (0 linhas).
+     *
+     * @return {@code true} se esta transação tomou a vaga
+     */
+    boolean claimOpenForOffers(UUID id, Instant now);
 }

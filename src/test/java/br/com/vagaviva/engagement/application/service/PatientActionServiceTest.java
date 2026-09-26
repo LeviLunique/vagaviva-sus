@@ -25,6 +25,7 @@ import br.com.vagaviva.engagement.application.port.out.PatientActionTokenReposit
 import br.com.vagaviva.engagement.domain.PatientActionToken;
 import br.com.vagaviva.engagement.domain.TokenPurpose;
 import br.com.vagaviva.patient.PatientApi;
+import br.com.vagaviva.reallocation.ReallocationApi;
 import br.com.vagaviva.scheduling.AppointmentOrigin;
 import br.com.vagaviva.scheduling.AppointmentStatus;
 import br.com.vagaviva.scheduling.AppointmentView;
@@ -53,6 +54,7 @@ class PatientActionServiceTest {
 
     @Mock PatientActionTokenRepository tokens;
     @Mock SchedulingApi scheduling;
+    @Mock ReallocationApi reallocation;
     @Mock PatientApi patients;
     @Mock CatalogApi catalog;
     @Mock EngagementAudit audit;
@@ -62,7 +64,7 @@ class PatientActionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PatientActionService(tokens, scheduling, patients, catalog, audit, CLOCK);
+        service = new PatientActionService(tokens, scheduling, reallocation, patients, catalog, audit, CLOCK);
         lenient().when(tokens.save(any())).thenAnswer(call -> call.getArgument(0));
     }
 
@@ -134,7 +136,7 @@ class PatientActionServiceTest {
     @DisplayName("sem ações depois do início; prazo vencido tira só o CONFIRM")
     void shouldNarrowActionsOverTime() {
         AppointmentView view = appointment(AppointmentStatus.PENDING_CONFIRMATION);
-        var late = new PatientActionService(tokens, scheduling, patients, catalog, audit,
+        var late = new PatientActionService(tokens, scheduling, reallocation, patients, catalog, audit,
                 java.time.Clock.fixed(view.confirmationDeadline().plus(Duration.ofMinutes(1)), CLOCK.getZone()));
         var issued = PatientActionToken.issue(TokenPurpose.APPOINTMENT, view.id(), view.startAt(), CLOCK);
         when(tokens.findByHash(issued.token().tokenHash())).thenReturn(Optional.of(issued.token()));

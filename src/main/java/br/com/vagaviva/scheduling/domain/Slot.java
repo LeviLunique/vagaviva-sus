@@ -119,6 +119,14 @@ public final class Slot {
         moveTo(SlotStatus.CANCELLED, clock);
     }
 
+    /** Encaixe esgotado sem aceite (RN-15): a vaga em oferta é dada como perdida. */
+    public void markLost(Clock clock) {
+        if (status != SlotStatus.OPEN_FOR_OFFERS) {
+            throw new ConflictException("SLOT_INVALID_STATE", "Só uma vaga em oferta de encaixe pode ser dada como perdida.");
+        }
+        moveTo(SlotStatus.EXPIRED, clock);
+    }
+
     /** A primeira alocação é {@code REGULAR}; depois de liberada, a próxima é {@code REALLOCATED}. */
     public boolean wasReleased() {
         return releaseCount > 0;

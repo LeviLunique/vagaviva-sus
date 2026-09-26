@@ -33,6 +33,21 @@ public interface SchedulingApi {
      */
     List<AppointmentView> findAppointmentsNeedingReminder(ReminderType type, Instant from, Instant to);
 
+    /** F6: a vaga em oferta de encaixe (unidade, especialidade, início e status atual). */
+    Optional<SlotView> findSlotView(UUID slotId);
+
+    /**
+     * RN-17/RN-18: toma a vaga em oferta por um {@code UPDATE} condicional — o primeiro aceite vence — e
+     * cria o agendamento já confirmado (origem {@code SHORT_NOTICE_OFFER}); o encaminhamento fica agendado.
+     *
+     * @throws br.com.vagaviva.shared.domain.ConflictException {@code SLOT_ALREADY_FILLED} se a vaga já não
+     *     estiver em oferta
+     */
+    AppointmentView allocateFromOffer(UUID slotId, UUID referralId);
+
+    /** RN-15: encaixe esgotado sem aceite ⇒ vaga perdida ({@code SlotLost}). Ignora vaga que já saiu da oferta. */
+    void markSlotLost(UUID slotId);
+
     enum ReminderType {
         CONFIRMATION,
         ATTENDANCE

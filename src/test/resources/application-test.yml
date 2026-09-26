@@ -23,6 +23,10 @@ vagaviva:
     allocation-initial-delay: PT1H
     confirmation-deadline-check-interval: PT1H
     confirmation-deadline-initial-delay: PT1H
+  reallocation:
+    # Nos testes a expiração é chamada explicitamente.
+    offer-expiration-check-interval: PT1H
+    offer-expiration-initial-delay: PT1H
   engagement:
     queue-name: vagaviva-test-notifications
     reminder-interval: PT1H

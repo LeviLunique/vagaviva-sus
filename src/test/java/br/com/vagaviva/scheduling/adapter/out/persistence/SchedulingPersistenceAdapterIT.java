@@ -147,4 +147,22 @@ class SchedulingPersistenceAdapterIT {
             Thread.currentThread().interrupt();
         }
     }
+
+    @Test
+    @DisplayName("RN-17: só a primeira tomada da vaga em oferta altera a linha (UPDATE condicional)")
+    void shouldClaimOpenSlotOnlyOnce() {
+        Slot open = Slot.publish(UUID.randomUUID(), UUID.randomUUID(), "Dra. Encaixe",
+                clock.instant().plus(Duration.ofDays(1)).truncatedTo(ChronoUnit.HOURS), 30, leadTimes, clock);
+        assertThat(open.status()).isEqualTo(SlotStatus.OPEN_FOR_OFFERS);
+        slots.save(open);
+
+        Boolean first = transactions.execute(status -> slots.claimOpenForOffers(open.id(), clock.instant()));
+        Boolean second = transactions.execute(status -> slots.claimOpenForOffers(open.id(), clock.instant()));
+
+        assertThat(first).isTrue();
+        assertThat(second).isFalse();
+        Slot claimed = slots.findById(open.id()).orElseThrow();
+        assertThat(claimed.status()).isEqualTo(SlotStatus.ALLOCATED);
+        assertThat(claimed.version()).isEqualTo(1L);
+    }
 }

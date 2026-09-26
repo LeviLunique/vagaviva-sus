@@ -1,6 +1,7 @@
 package br.com.vagaviva.scheduling.application.service;
 
 import br.com.vagaviva.shared.domain.BusinessRuleException;
+import br.com.vagaviva.shared.domain.ConflictException;
 import br.com.vagaviva.shared.domain.ForbiddenOperationException;
 import br.com.vagaviva.shared.domain.NotFoundException;
 
@@ -20,6 +21,14 @@ final class SchedulingErrors {
 
     static NotFoundException slotOfAppointmentMissing() {
         return new NotFoundException("SLOT_NOT_FOUND", "A vaga do agendamento não foi encontrada.");
+    }
+
+    static ConflictException slotAlreadyFilled() {
+        return new ConflictException("SLOT_ALREADY_FILLED", "Vaga já preenchida por outro paciente.");
+    }
+
+    static NotFoundException referralNotFound() {
+        return new NotFoundException("REFERRAL_NOT_FOUND", "Encaminhamento não encontrado.");
     }
 
     static ForbiddenOperationException outOfUnit() {

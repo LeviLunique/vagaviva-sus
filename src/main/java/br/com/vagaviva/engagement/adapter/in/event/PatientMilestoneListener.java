@@ -1,6 +1,7 @@
 package br.com.vagaviva.engagement.adapter.in.event;
 
 import br.com.vagaviva.engagement.application.port.in.NotifyPatientUseCases;
+import br.com.vagaviva.reallocation.events.SlotOffered;
 import br.com.vagaviva.regulation.events.ReferralQueued;
 import br.com.vagaviva.scheduling.events.AppointmentCancelled;
 import br.com.vagaviva.scheduling.events.AppointmentScheduled;
@@ -30,5 +31,10 @@ class PatientMilestoneListener {
     @ApplicationModuleListener
     void on(AppointmentCancelled event) {
         notify.appointmentCancelled(event);
+    }
+
+    @ApplicationModuleListener
+    void on(SlotOffered event) {
+        notify.slotOffered(event);
     }
 }

@@ -84,7 +84,7 @@ class QueueApiImpl implements QueueApi {
         return repository.findById(referralId).map(referral -> new ReferralView(referral.id(),
                 referral.protocol().value(), referral.patientId(), referral.specialtyId(), referral.requesterUnitId(),
                 referral.status(), referral.riskClass(), referral.acceptsShortNotice(),
-                referral.patientMunicipalityCode().value()));
+                referral.patientMunicipalityCode().value(), referral.queueEnteredAt()));
     }
 
     private void change(UUID referralId, Consumer<Referral> transition) {

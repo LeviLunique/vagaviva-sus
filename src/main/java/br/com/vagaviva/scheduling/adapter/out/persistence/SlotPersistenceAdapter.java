@@ -134,4 +134,15 @@ class SlotPersistenceAdapter implements SlotRepository {
         }
         return ex;
     }
+
+    @Override
+    public boolean claimOpenForOffers(UUID id, Instant now) {
+        entityManager.flush();
+        int updated = jdbc.update("""
+                UPDATE slot SET status = 'ALLOCATED', updated_at = :now, version = version + 1
+                WHERE id = :id AND status = 'OPEN_FOR_OFFERS'""",
+                new MapSqlParameterSource("id", id).addValue("now", Timestamp.from(now)));
+        entityManager.clear();
+        return updated == 1;
+    }
 }

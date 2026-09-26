@@ -70,7 +70,7 @@ class PatientActionsAndDeadlineTest {
     }
 
     private SchedulingApiImpl api(Clock clock) {
-        return new SchedulingApiImpl(appointments, queue, releaser(clock), events, clock);
+        return new SchedulingApiImpl(appointments, slots, queue, releaser(clock), audit, events, clock);
     }
 
     /** Agendamento pendente com a vaga (alocada) disponível no repositório. */

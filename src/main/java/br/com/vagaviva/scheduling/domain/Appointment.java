@@ -2,6 +2,7 @@ package br.com.vagaviva.scheduling.domain;
 
 import br.com.vagaviva.scheduling.AppointmentOrigin;
 import br.com.vagaviva.scheduling.AppointmentStatus;
+import br.com.vagaviva.scheduling.SlotStatus;
 import br.com.vagaviva.shared.domain.BusinessRuleException;
 import br.com.vagaviva.shared.domain.ConflictException;
 import br.com.vagaviva.shared.domain.Ids;
@@ -62,6 +63,20 @@ public final class Appointment {
         return new Appointment(Ids.newId(), slot.id(), referralId, patientId, slot.unitId(), slot.specialtyId(),
                 slot.startAt(), origin, AppointmentStatus.PENDING_CONFIRMATION, policy.deadlineFor(slot.startAt()), null,
                 null, null, now, now, null);
+    }
+
+    /**
+     * RN-18: encaixe aceito pelo paciente — já nasce confirmado (quem aceitou acabou de responder) e
+     * sem prazo de confirmação. A vaga precisa ter sido tomada ({@code ALLOCATED}) por quem chama.
+     */
+    public static Appointment fromOffer(Slot slot, UUID referralId, UUID patientId, Clock clock) {
+        if (slot.status() != SlotStatus.ALLOCATED) {
+            throw new ConflictException("SLOT_INVALID_STATE", "A vaga do encaixe precisa estar alocada.");
+        }
+        Instant now = clock.instant();
+        return new Appointment(Ids.newId(), slot.id(), referralId, patientId, slot.unitId(), slot.specialtyId(),
+                slot.startAt(), AppointmentOrigin.SHORT_NOTICE_OFFER, AppointmentStatus.CONFIRMED, null, now, null, null,
+                now, now, null);
     }
 
     public static Appointment restore(UUID id, UUID slotId, UUID referralId, UUID patientId, UUID unitId,
