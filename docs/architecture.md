@@ -131,7 +131,13 @@ sequenceDiagram
 - Consistência forte no núcleo (alocação, aceite de oferta) com bloqueio pessimista (`SKIP LOCKED`) e atualização condicional; consistência eventual para notificações e indicadores.
 - Leituras de alto volume (posição pública na fila, indicadores) usam *read models* recalculados/projetados (CQRS leve).
 
-## 6. Variante: perfil demo (apresentação de baixo custo)
+## 6. Indicadores e observabilidade (F7)
+- **Indicadores (RF-35)**: o módulo `insights` projeta os eventos de agenda e encaixe em duas tabelas de fatos (`appointment_fact`, `slot_release_fact`) — gravação idempotente (`ON CONFLICT DO NOTHING` e atualizações condicionais), então a reentrega de um evento não duplica nada. As consultas agregam os fatos por período (agendamentos pela data do atendimento, liberações pela data da liberação), especialidade e unidade; a fila por risco e o custo das mensagens vêm das APIs públicas da regulação e do engajamento, sem ler tabelas de outros módulos.
+- **Métricas (RF-36)**: Micrometer → OTLP → sidecar ADOT → CloudWatch (namespace `VagaViva`, agregados sem dimensão e por dimensão única). Contadores de agendamento, desfecho, liberação, reaproveitamento e perda nascem na projeção (só incrementam quando a linha muda); mensagens no envio; ofertas nas transições; timer da alocação; gauge da fila por especialidade.
+- **Traces e logs**: OTLP → ADOT → X-Ray. O contexto de trace é propagado para os listeners assíncronos (`ContextPropagatingTaskDecorator`), então o mesmo `traceId` aparece nos logs da requisição, dos listeners e nas respostas de erro (`problem+json`). Logs sem dados pessoais — verificado por `LogPrivacyIT` nos fluxos principais.
+- **Alarmes de negócio** (além dos técnicos): falhas de envio de mensagem (`vagaviva.notifications{status=FAILED}` ≥ 5 em 5 min) e alocação parada (nenhum agendamento por 2 h em horário comercial, via metric math com `HOUR`/`DAY`).
+
+## 7. Variante: perfil demo (apresentação de baixo custo)
 
 Mesma aplicação (a arquitetura de software não muda), infraestrutura diferente — ver [ADR-0012](adr/0012-perfil-demo-ec2-unica.md) e [capacity-planning.md §5](capacity-planning.md).
 

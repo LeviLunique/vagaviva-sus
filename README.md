@@ -88,6 +88,9 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 25)"
 | `SQS_NOTIFICATIONS_QUEUE` | `vagaviva-local-notifications` | fila de envio das mensagens ao paciente (DLQ após 5 recebimentos) |
 | `WHATSAPP_PHONE_NUMBER_ID` | vazio | número de origem do WhatsApp (AWS End User Messaging Social) — só com o canal ligado |
 | `AWS_REGION` | `sa-east-1` | região AWS |
+| `OTEL_EXPORT_ENABLED` | `false` | exporta traces e métricas via OTLP (ligado no ECS, onde há o sidecar ADOT; desligado local e no demo) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | coletor OTLP (sidecar ADOT) |
+| `TRACING_SAMPLING_PROBABILITY` | `0.1` | fração das requisições com trace exportado (o `traceId` vai para os logs sempre) |
 
 Novas variáveis são adicionadas a cada módulo entregue (ver `.env.example`).
 
@@ -133,6 +136,8 @@ Base `/api/v1`. Implementados até o momento:
 | GET | `/p/{token}` | **Público**: link curto das mensagens → `302` para `/api/v1/patient-actions/{token}` |
 | POST | `/api/v1/patient-actions/{token}/accept-offer` · `/decline-offer` | **Público**: aceitar a oferta de encaixe (o primeiro aceite fica com a vaga; os demais recebem `409 SLOT_ALREADY_FILLED`) ou recusar (continua na fila) |
 | GET | `/api/v1/slot-offers` | Ofertas de encaixe por rodada, status e respostas (filtros `slotId`, `status`) — ADMIN, REGULATOR; SCHEDULER informando uma vaga da própria unidade |
+| GET | `/api/v1/insights/indicators` | Indicadores do período (`from`/`to` em `yyyy-MM-dd`, padrão 30 dias; filtros `specialtyId`, `unitId`): absenteísmo, confirmação, vagas liberadas/reaproveitadas/perdidas, tempo de reocupação, espera, fila por risco e custo estimado de mensagens — MANAGER, ADMIN |
+| GET | `/api/v1/insights/indicators/by-specialty` | As mesmas métricas por especialidade — MANAGER, ADMIN |
 | GET | `/api/v1/notifications` | Log de entregas (status, canal, tentativas — sem texto nem telefone) — ADMIN; SCHEDULER informando um `appointmentId` da própria unidade |
 | GET | `/api/v1/dev/sandbox/messages` | Demonstração: mensagens do canal SANDBOX de um paciente, com o link — ADMIN (só com `vagaviva.demo.enabled`) |
 | POST | `/api/v1/dev/appointments/{id}/expire-confirmation` | Demonstração: expira agora o prazo de confirmação (vaga liberada, paciente de volta à fila) — ADMIN |
@@ -157,7 +162,7 @@ Módulos do MVP e status de entrega:
 | Agenda e alocação | `/slots`, `/allocation-runs`, `/appointments` (check-in, falta) | ✅ |
 | Confirmação ativa | `/patient-actions/{token}` (confirmar, cancelar, desistir), `/p/{token}`, `/notifications` | ✅ |
 | Reaproveitamento de vagas | `/patient-actions/{token}/accept-offer`, `/decline-offer`, `/slot-offers` | ✅ |
-| Indicadores | `/insights/indicators` | ⏳ |
+| Indicadores | `/insights/indicators`, `/insights/indicators/by-specialty` | ✅ |
 
 ## Modelagem e banco de dados
 - Migrations Flyway em `src/main/resources/db/migration` — convenções em [MIGRATIONS](src/main/resources/db/migration/README.md).
