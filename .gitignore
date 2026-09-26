@@ -48,3 +48,6 @@ Thumbs.db
 
 # Node (Newman via npx)
 node_modules/
+
+# Resultados locais do teste de carga (k6)
+/load/k6/out/
