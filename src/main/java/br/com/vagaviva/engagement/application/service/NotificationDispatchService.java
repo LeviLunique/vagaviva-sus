@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,14 +32,16 @@ class NotificationDispatchService implements DispatchNotificationUseCase {
     private final PatientApi patients;
     private final Map<NotificationChannel, NotificationSender> senders = new EnumMap<>(NotificationChannel.class);
     private final ResilientDelivery delivery;
+    private final MeterRegistry meters;
     private final Clock clock;
 
     NotificationDispatchService(NotificationRepository notifications, PatientApi patients,
-            List<NotificationSender> senders, ResilientDelivery delivery, Clock clock) {
+            List<NotificationSender> senders, ResilientDelivery delivery, MeterRegistry meters, Clock clock) {
         this.notifications = notifications;
         this.patients = patients;
         senders.forEach(sender -> this.senders.put(sender.channel(), sender));
         this.delivery = delivery;
+        this.meters = meters;
         this.clock = clock;
     }
 
@@ -60,11 +63,19 @@ class NotificationDispatchService implements DispatchNotificationUseCase {
             String providerId = delivery.call(() -> sender.send(phone, notification.body()));
             notification.markSent(providerId, clock);
             notifications.save(notification);
+            count(notification, NotificationStatus.SENT);
         } catch (RuntimeException ex) {
             notification.recordFailure(ex.getMessage());
             notifications.save(notification);
+            count(notification, NotificationStatus.FAILED);
             throw new NotificationDeliveryException(notificationId, ex);
         }
+    }
+
+    /** RF-36: {@code vagaviva.notifications{channel,type,status}} — {@code FAILED} conta cada tentativa sem sucesso. */
+    private void count(Notification notification, NotificationStatus status) {
+        meters.counter("vagaviva.notifications", "channel", notification.channel().name(), "type",
+                notification.type().name(), "status", status.name()).increment();
     }
 
     private NotificationSender senderFor(NotificationChannel channel) {

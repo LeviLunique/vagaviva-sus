@@ -31,4 +31,7 @@ public interface QueueApi {
     void withdraw(UUID referralId);
 
     Optional<ReferralView> findView(UUID referralId);
+
+    /** Fila atual por especialidade e classe de risco (indicadores e métrica da fila, F7). */
+    List<WaitingCount> waitingCounts();
 }

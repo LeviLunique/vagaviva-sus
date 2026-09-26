@@ -22,6 +22,7 @@ import br.com.vagaviva.engagement.domain.NotificationStatus;
 import br.com.vagaviva.engagement.domain.NotificationType;
 import br.com.vagaviva.patient.PatientApi;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
 import java.time.Duration;
@@ -45,6 +46,7 @@ class NotificationDispatchServiceTest {
 
     private final NotificationSender sms = mock(NotificationSender.class);
     private final NotificationSender sandbox = mock(NotificationSender.class);
+    private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
     private NotificationDispatchService service;
 
     @BeforeEach
@@ -53,7 +55,7 @@ class NotificationDispatchServiceTest {
         when(sandbox.channel()).thenReturn(NotificationChannel.SANDBOX);
         var retries = RetryRegistry.of(RetryConfig.custom().maxAttempts(3).waitDuration(Duration.ofMillis(1)).build());
         service = new NotificationDispatchService(notifications, patients, List.of(sms, sandbox),
-                new ResilientDelivery(retries, CircuitBreakerRegistry.ofDefaults()), CLOCK);
+                new ResilientDelivery(retries, CircuitBreakerRegistry.ofDefaults()), meters, CLOCK);
         lenient().when(notifications.save(any())).thenAnswer(call -> call.getArgument(0));
         lenient().when(patients.findSummary(PATIENT)).thenReturn(Optional.of(patient(PATIENT, false, true)));
     }
@@ -75,6 +77,8 @@ class NotificationDispatchServiceTest {
 
         assertThat(notification.status()).isEqualTo(NotificationStatus.SENT);
         assertThat(notification.providerMessageId()).isEqualTo("sns-1");
+        assertThat(meters.counter("vagaviva.notifications", "channel", "SMS", "type", "APPOINTMENT_SCHEDULED",
+                "status", "SENT").count()).isEqualTo(1.0);
         verify(sandbox, never()).send(any(), any());
     }
 
@@ -113,6 +117,8 @@ class NotificationDispatchServiceTest {
 
         assertThat(notification.attempts()).isEqualTo(1);
         assertThat(notification.lastError()).contains("provedor indisponível");
+        assertThat(meters.counter("vagaviva.notifications", "channel", "SMS", "type", "APPOINTMENT_SCHEDULED",
+                "status", "FAILED").count()).isEqualTo(1.0);
         verify(sms, times(3)).send(any(), any());
     }
 

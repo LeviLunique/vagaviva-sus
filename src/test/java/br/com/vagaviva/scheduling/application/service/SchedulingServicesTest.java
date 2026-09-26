@@ -55,6 +55,7 @@ import br.com.vagaviva.shared.domain.ForbiddenOperationException;
 import br.com.vagaviva.shared.domain.NotFoundException;
 import br.com.vagaviva.shared.security.CurrentUser;
 import br.com.vagaviva.shared.security.Role;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -233,7 +234,7 @@ class SchedulingServicesTest {
 
         private AllocationService service() {
             return new AllocationService(slots, appointments, queue, catalog, CONFIRMATION, PROPERTIES, audit, events,
-                    transactionManager, CLOCK);
+                    transactionManager, new SimpleMeterRegistry(), CLOCK);
         }
 
         @Test

@@ -27,6 +27,7 @@ import br.com.vagaviva.scheduling.AppointmentView;
 import br.com.vagaviva.scheduling.SchedulingApi;
 import br.com.vagaviva.shared.domain.ConflictException;
 import br.com.vagaviva.shared.domain.NotFoundException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,11 +50,12 @@ class OfferResponseServiceTest {
     @Mock ReallocationAudit audit;
     @Mock ApplicationEventPublisher events;
 
+    private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
     private OfferResponseService service;
 
     @BeforeEach
     void setUp() {
-        service = new OfferResponseService(offers, scheduling, campaign, audit, events, CLOCK);
+        service = new OfferResponseService(offers, scheduling, campaign, audit, new OfferMetrics(meters), events, CLOCK);
         lenient().when(offers.save(any())).thenAnswer(call -> call.getArgument(0));
         lenient().when(scheduling.findSlotView(SLOT)).thenReturn(Optional.of(openSlot(SLOT)));
     }
@@ -78,6 +80,7 @@ class OfferResponseServiceTest {
         assertThat(accepted.appointmentId()).isEqualTo(appointment);
         assertThat(offer.status()).isEqualTo(OfferStatus.ACCEPTED);
         verify(offers).supersedeOthers(SLOT, offer.id(), NOW);
+        assertThat(meters.counter("vagaviva.offers", "status", "ACCEPTED").count()).isEqualTo(1.0);
         verify(events).publishEvent(new SlotOfferAccepted(offer.id(), SLOT, offer.referralId(), offer.patientId(),
                 appointment, 2, START));
         verify(audit).record(eq(ReallocationAudit.OFFER_ACCEPTED), eq(ReallocationAudit.SLOT_OFFER), eq(offer.id()), any());

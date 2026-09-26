@@ -6,6 +6,7 @@ import br.com.vagaviva.regulation.ReferralCandidate;
 import br.com.vagaviva.regulation.ReferralView;
 import br.com.vagaviva.regulation.ReturnReason;
 import br.com.vagaviva.regulation.ReviewReason;
+import br.com.vagaviva.regulation.WaitingCount;
 import br.com.vagaviva.regulation.application.port.out.ReferralRepository;
 import br.com.vagaviva.regulation.domain.Referral;
 import java.time.Clock;
@@ -85,6 +86,12 @@ class QueueApiImpl implements QueueApi {
                 referral.protocol().value(), referral.patientId(), referral.specialtyId(), referral.requesterUnitId(),
                 referral.status(), referral.riskClass(), referral.acceptsShortNotice(),
                 referral.patientMunicipalityCode().value(), referral.queueEnteredAt()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WaitingCount> waitingCounts() {
+        return repository.countWaiting();
     }
 
     private void change(UUID referralId, Consumer<Referral> transition) {

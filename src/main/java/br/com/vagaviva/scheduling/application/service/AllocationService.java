@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -45,11 +47,13 @@ class AllocationService implements RunAllocationUseCase {
     private final SchedulingAudit audit;
     private final ApplicationEventPublisher events;
     private final TransactionTemplate perSlotTransaction;
+    private final Timer duration;
     private final Clock clock;
 
     AllocationService(SlotRepository slots, AppointmentRepository appointments, QueueApi queue, CatalogApi catalog,
             ConfirmationPolicy confirmationPolicy, SchedulingProperties properties, SchedulingAudit audit,
-            ApplicationEventPublisher events, PlatformTransactionManager transactionManager, Clock clock) {
+            ApplicationEventPublisher events, PlatformTransactionManager transactionManager, MeterRegistry meters,
+            Clock clock) {
         this.slots = slots;
         this.appointments = appointments;
         this.queue = queue;
@@ -60,11 +64,17 @@ class AllocationService implements RunAllocationUseCase {
         this.events = events;
         this.perSlotTransaction = new TransactionTemplate(transactionManager);
         this.perSlotTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.duration = Timer.builder("vagaviva.allocation.duration")
+                .description("Duração de uma execução do motor de alocação").register(meters);
         this.clock = clock;
     }
 
     @Override
     public AllocationRunResult run() {
+        return duration.record(this::allocateBatch);
+    }
+
+    private AllocationRunResult allocateBatch() {
         List<UUID> candidates = slots.findAllocatableIds(clock.instant().plus(properties.regularAllocationMinLead()),
                 properties.allocationBatchSize());
         int examined = 0;
