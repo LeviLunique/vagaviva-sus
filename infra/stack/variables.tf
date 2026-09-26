@@ -148,9 +148,15 @@ variable "waf_rate_limit_per_ip" {
 }
 
 variable "waf_public_rate_limit_per_ip" {
-  description = "Requisições por IP em 5 minutos nas rotas públicas (/api/v1/public/ e links do paciente)."
+  description = "Requisições por IP em 5 minutos nas rotas públicas (/api/v1/public/ e links do paciente /api/v1/patient-actions/ e /p/)."
   type        = number
   default     = 100
+}
+
+variable "waf_allowlist_cidrs" {
+  description = "CIDRs IPv4 liberados de todas as regras do WAF — só durante teste de carga (F8). Vazio = sem regra."
+  type        = list(string)
+  default     = []
 }
 
 # ---------------------------------------------------------------- observabilidade

@@ -71,6 +71,15 @@ resource "aws_cloudfront_distribution" "api" {
 
 # ---------------------------------------------------------------- WAF (escopo CLOUDFRONT => us-east-1)
 
+resource "aws_wafv2_ip_set" "allowlist" {
+  count              = var.enable_waf && length(var.waf_allowlist_cidrs) > 0 ? 1 : 0
+  provider           = aws.us_east_1
+  name               = "${local.name}-allowlist"
+  scope              = "CLOUDFRONT"
+  ip_address_version = "IPV4"
+  addresses          = var.waf_allowlist_cidrs
+}
+
 resource "aws_wafv2_web_acl" "api" {
   count    = var.enable_waf ? 1 : 0
   provider = aws.us_east_1
@@ -81,9 +90,32 @@ resource "aws_wafv2_web_acl" "api" {
     allow {}
   }
 
+  # Teste de carga (F8): IPs autorizados passam direto — sem regras gerenciadas nem limite de taxa.
+  # Vazio fora dos testes (TF_VAR_waf_allowlist_cidrs='["x.x.x.x/32"]' só durante a execução do k6).
+  dynamic "rule" {
+    for_each = length(var.waf_allowlist_cidrs) > 0 ? [1] : []
+    content {
+      name     = "allowlist-load-test"
+      priority = 0
+      action {
+        allow {}
+      }
+      statement {
+        ip_set_reference_statement {
+          arn = aws_wafv2_ip_set.allowlist[0].arn
+        }
+      }
+      visibility_config {
+        cloudwatch_metrics_enabled = true
+        metric_name                = "allowlist-load-test"
+        sampled_requests_enabled   = false
+      }
+    }
+  }
+
   rule {
     name     = "ip-reputation"
-    priority = 0
+    priority = 1
     override_action {
       none {}
     }
@@ -102,7 +134,7 @@ resource "aws_wafv2_web_acl" "api" {
 
   rule {
     name     = "common-rule-set"
-    priority = 1
+    priority = 2
     override_action {
       none {}
     }
@@ -121,7 +153,7 @@ resource "aws_wafv2_web_acl" "api" {
 
   rule {
     name     = "known-bad-inputs"
-    priority = 2
+    priority = 3
     override_action {
       none {}
     }
@@ -140,7 +172,7 @@ resource "aws_wafv2_web_acl" "api" {
 
   rule {
     name     = "sql-injection"
-    priority = 3
+    priority = 4
     override_action {
       none {}
     }
@@ -157,11 +189,11 @@ resource "aws_wafv2_web_acl" "api" {
     }
   }
 
-  # Rotas públicas (consulta de posição na fila e links enviados ao paciente): limite mais rígido
+  # Rotas públicas (consulta de posição na fila, links do paciente e link curto /p/): limite mais rígido
   # contra enumeração/scraping.
   rule {
     name     = "rate-limit-public"
-    priority = 4
+    priority = 5
     action {
       block {}
     }
@@ -197,6 +229,19 @@ resource "aws_wafv2_web_acl" "api" {
                 }
               }
             }
+            statement {
+              byte_match_statement {
+                search_string         = "/p/"
+                positional_constraint = "STARTS_WITH"
+                field_to_match {
+                  uri_path {}
+                }
+                text_transformation {
+                  priority = 0
+                  type     = "LOWERCASE"
+                }
+              }
+            }
           }
         }
       }
@@ -210,7 +255,7 @@ resource "aws_wafv2_web_acl" "api" {
 
   rule {
     name     = "rate-limit-global"
-    priority = 5
+    priority = 6
     action {
       block {}
     }
