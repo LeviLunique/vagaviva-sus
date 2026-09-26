@@ -160,6 +160,56 @@ resource "aws_cloudwatch_metric_alarm" "notifications_backlog" {
   ok_actions          = local.alarm_actions
 }
 
+# ---------------------------------------------------------------- negócio (F7, namespace VagaViva via ADOT)
+
+resource "aws_cloudwatch_metric_alarm" "notifications_failed" {
+  alarm_name          = "${local.name}-notifications-failed"
+  alarm_description   = "Tentativas de envio de mensagem ao paciente falhando (provedor de SMS/WhatsApp)"
+  namespace           = "VagaViva"
+  metric_name         = "vagaviva.notifications"
+  dimensions          = { status = "FAILED" }
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+}
+
+# Nenhum agendamento criado por 2 h seguidas em horário comercial (seg-sex, 8h-18h em São Paulo = 11h-21h UTC).
+resource "aws_cloudwatch_metric_alarm" "allocation_stalled" {
+  alarm_name          = "${local.name}-allocation-stalled"
+  alarm_description   = "Motor de alocação sem criar agendamentos em horário comercial"
+  evaluation_periods  = 2
+  threshold           = 1
+  comparison_operator = "LessThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+
+  metric_query {
+    id = "scheduled"
+    metric {
+      namespace   = "VagaViva"
+      metric_name = "vagaviva.appointments.scheduled"
+      stat        = "Sum"
+      period      = 3600
+    }
+  }
+  metric_query {
+    id         = "filled"
+    expression = "FILL(scheduled, 0)"
+  }
+  metric_query {
+    id          = "business_hours"
+    expression  = "IF(HOUR(filled) >= 11 AND HOUR(filled) <= 20 AND DAY(filled) <= 5, filled, 1)"
+    label       = "Agendamentos criados (fora do horário comercial conta como 1)"
+    return_data = true
+  }
+}
+
 resource "aws_cloudwatch_dashboard" "ops" {
   dashboard_name = "${local.name}-operacao"
   dashboard_body = jsonencode({
@@ -229,6 +279,58 @@ resource "aws_cloudwatch_dashboard" "ops" {
             ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.notifications.name],
             [".", "ApproximateAgeOfOldestMessage", ".", ".", { yAxis = "right" }],
             [".", "ApproximateNumberOfMessagesVisible", ".", aws_sqs_queue.notifications_dlq.name],
+          ]
+        }
+      },
+      {
+        type = "metric", x = 0, y = 18, width = 12, height = 6
+        properties = {
+          title  = "Negócio - agendamentos por origem e desfechos"
+          region = local.region
+          stat   = "Sum"
+          period = 300
+          metrics = [
+            [{ expression = "SEARCH('{VagaViva,origin} MetricName=\"vagaviva.appointments.scheduled\"', 'Sum', 300)", id = "scheduled" }],
+            [{ expression = "SEARCH('{VagaViva,status} MetricName=\"vagaviva.appointments.outcome\"', 'Sum', 300)", id = "outcome" }],
+          ]
+        }
+      },
+      {
+        type = "metric", x = 12, y = 18, width = 12, height = 6
+        properties = {
+          title  = "Negócio - vagas liberadas, reaproveitadas e perdidas"
+          region = local.region
+          stat   = "Sum"
+          period = 300
+          metrics = [
+            [{ expression = "SEARCH('{VagaViva,reason} MetricName=\"vagaviva.slots.released\"', 'Sum', 300)", id = "released" }],
+            [{ expression = "SEARCH('{VagaViva,via} MetricName=\"vagaviva.slots.reallocated\"', 'Sum', 300)", id = "reallocated" }],
+            ["VagaViva", "vagaviva.slots.lost", { id = "lost" }],
+          ]
+        }
+      },
+      {
+        type = "metric", x = 0, y = 24, width = 12, height = 6
+        properties = {
+          title  = "Negócio - mensagens e ofertas de encaixe"
+          region = local.region
+          stat   = "Sum"
+          period = 300
+          metrics = [
+            [{ expression = "SEARCH('{VagaViva,status} MetricName=\"vagaviva.notifications\"', 'Sum', 300)", id = "notifications" }],
+            [{ expression = "SEARCH('{VagaViva,status} MetricName=\"vagaviva.offers\"', 'Sum', 300)", id = "offers" }],
+          ]
+        }
+      },
+      {
+        type = "metric", x = 12, y = 24, width = 12, height = 6
+        properties = {
+          title  = "Negócio - fila por especialidade e duração da alocação"
+          region = local.region
+          period = 300
+          metrics = [
+            [{ expression = "SEARCH('{VagaViva,specialty} MetricName=\"vagaviva.queue.waiting\"', 'Maximum', 300)", id = "queue" }],
+            ["VagaViva", "vagaviva.allocation.duration", { stat = "Maximum", yAxis = "right", id = "allocation" }],
           ]
         }
       },
