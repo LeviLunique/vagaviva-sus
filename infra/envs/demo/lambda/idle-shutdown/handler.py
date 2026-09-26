@@ -16,11 +16,19 @@ cloudwatch = boto3.client("cloudwatch", region_name="us-east-1")
 
 
 def handler(event, context):
-    state = ec2.describe_instances(InstanceIds=[INSTANCE_ID])["Reservations"][0]["Instances"][0]["State"]["Name"]
+    instance = ec2.describe_instances(InstanceIds=[INSTANCE_ID])["Reservations"][0]["Instances"][0]
+    state = instance["State"]["Name"]
     if state != "running":
         return {"action": "none", "reason": f"instancia em estado '{state}'"}
 
     now = datetime.datetime.now(datetime.timezone.utc)
+    # Carencia apos ligar: a metrica da CloudFront chega com atraso de alguns minutos e, logo apos um
+    # boot depois de horas parada, a janela ainda esta zerada mesmo com gente usando o sistema.
+    # LaunchTime e atualizado a cada start, nao so na criacao da instancia.
+    running_for = now - instance["LaunchTime"]
+    if running_for < datetime.timedelta(minutes=IDLE_MINUTES):
+        return {"action": "none", "reason": f"ligada ha {int(running_for.total_seconds() // 60)} min (carencia)"}
+
     metrics = cloudwatch.get_metric_statistics(
         Namespace="AWS/CloudFront",
         MetricName="Requests",
