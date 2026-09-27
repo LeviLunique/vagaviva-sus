@@ -103,9 +103,9 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 25)"
 | `SQS_NOTIFICATIONS_QUEUE` | `vagaviva-local-notifications` | fila de envio das mensagens ao paciente (DLQ após 5 recebimentos) |
 | `WHATSAPP_PHONE_NUMBER_ID` | vazio | número de origem do WhatsApp (AWS End User Messaging Social) — só com o canal ligado |
 | `AWS_REGION` | `sa-east-1` | região AWS |
-| `OTEL_EXPORT_ENABLED` | `false` | exporta traces e métricas via OTLP (ligado no ECS, onde há o sidecar ADOT; desligado local e no demo) |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | coletor OTLP (sidecar ADOT) |
-| `TRACING_SAMPLING_PROBABILITY` | `0.1` | fração das requisições com trace exportado (o `traceId` vai para os logs sempre) |
+| `OTEL_EXPORT_ENABLED` | `false` | exporta traces e métricas via OTLP (ligado no demo, onde o coletor ADOT roda ao lado da API; desligado local) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | coletor OTLP (ADOT) |
+| `TRACING_SAMPLING_PROBABILITY` | `0.1` | fração das requisições com trace exportado (demo: `1.0`; o `traceId` vai para os logs sempre) |
 
 Novas variáveis são adicionadas a cada módulo entregue (ver `.env.example`).
 

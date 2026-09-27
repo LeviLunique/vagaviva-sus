@@ -4390,7 +4390,7 @@
               "response": []
             },
             {
-              "name": "Caixa sandbox — ofertas da rodada (extrai tokens)",
+              "name": "Oferta na caixa sandbox (Célia)",
               "event": [
                 {
                   "listen": "prerequest",
@@ -4476,7 +4476,7 @@
                   ]
                 }
               },
-              "id": "f84b4b65-5cc8-5cbc-b0a8-21abc2a2e3eb",
+              "id": "37da5430-cf36-592f-b83a-dd092ed0c26b",
               "response": []
             },
             {
