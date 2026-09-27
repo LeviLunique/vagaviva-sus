@@ -4,7 +4,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Estados da vaga e transições (SPEC §5.2). */
+/** Estados da vaga e transições. */
 public enum SlotStatus {
     AVAILABLE,
     ALLOCATED,

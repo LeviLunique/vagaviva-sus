@@ -32,7 +32,7 @@ O VagaViva fecha o circuito **agendar → confirmar → reaproveitar** e entrega
 |---|---|
 | API (ambiente de demonstração na AWS) | https://ddueuk9rcxkpp.cloudfront.net |
 | Swagger UI | https://ddueuk9rcxkpp.cloudfront.net/swagger-ui.html |
-| Versão | [v1.0.2](CHANGELOG.md) |
+| Versão | [v1.0.3](CHANGELOG.md) |
 
 - A instância **liga sozinha no primeiro acesso** (página "Iniciando o VagaViva…", 60–90 s) e desliga após 30 min sem uso — é a forma de manter o MVP completo no ar com custo de poucos dólares por mês ([ADR-0014](docs/adr/0014-ambiente-unico-demonstracao.md)).
 - Dados **100% fictícios** (seed de demonstração). As mensagens ao paciente usam o canal *sandbox*: o texto que iria por SMS/WhatsApp fica consultável em `GET /api/v1/dev/sandbox/messages?patientId=…` (ADMIN).

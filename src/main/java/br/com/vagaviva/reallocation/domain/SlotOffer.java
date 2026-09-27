@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/** Oferta de uma vaga de encaixe a um paciente, numa rodada (SPEC §5). */
+/** Oferta de uma vaga de encaixe a um paciente, numa rodada. */
 public final class SlotOffer {
 
     private final UUID id;

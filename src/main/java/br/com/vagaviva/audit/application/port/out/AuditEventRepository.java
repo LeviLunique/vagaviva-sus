@@ -12,6 +12,6 @@ public interface AuditEventRepository {
 
     Page<AuditEvent> search(AuditEventQuery query, Pageable pageable);
 
-    /** Retenção (SPEC §10): apaga os eventos anteriores a {@code limit}. @return quantos foram apagados */
+    /** Retenção (LGPD): apaga os eventos anteriores a {@code limit}. @return quantos foram apagados */
     int deleteOlderThan(Instant limit);
 }

@@ -2,6 +2,11 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões em [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.0.3] — 2026-09-27
+
+### Alterado
+- Comentários, testes e documentação passam a citar as regras pelo próprio conteúdo (LGPD, estados, padrões), sem remeter a documentos de planejamento que não fazem parte do repositório.
+
 ## [1.0.2] — 2026-09-27
 
 ### Adicionado
