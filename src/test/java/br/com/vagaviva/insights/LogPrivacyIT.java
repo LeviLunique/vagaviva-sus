@@ -34,7 +34,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 /**
- * RF-36/RNF-06 (SPEC: {@code LogPrivacyTest}): nos fluxos principais — cadastro e busca de paciente,
+ * RF-36/RNF-06: nos fluxos principais — cadastro e busca de paciente,
  * encaminhamento, regulação, alocação, mensagem e link do paciente — nenhum log contém CNS, CPF,
  * telefone, nome completo ou o token do link.
  */

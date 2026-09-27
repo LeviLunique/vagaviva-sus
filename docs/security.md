@@ -63,6 +63,6 @@ Cada item com o controle e onde ele é verificado. Revisão feita na F8 (2026-09
 - **API5 Autorização por função:** `@PreAuthorize` em cada endpoint administrativo; recursos de demonstração só existem com `vagaviva.demo.enabled`.
 - **API8 Configuração:** ver A05.
 
-**Retenção (F8, SPEC §10):** texto das mensagens apagado após 90 dias (o registro de envio permanece) e trilha de auditoria apagada após 5 anos — jobs diários com ShedLock (`NotificationRetentionJob`, `AuditRetentionJob`), verificados por `RetentionIT`.
+**Retenção (F8):** texto das mensagens apagado após 90 dias (o registro de envio permanece) e trilha de auditoria apagada após 5 anos — jobs diários com ShedLock (`NotificationRetentionJob`, `AuditRetentionJob`), verificados por `RetentionIT`.
 
 **Teste de carga (F8):** executado no desenho de produção recriado temporariamente, com o IP do gerador liberado por uma regra de *allowlist* no WAF só durante o teste ([capacity-planning.md §6](capacity-planning.md)).

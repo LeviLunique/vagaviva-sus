@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** A trilha é append-only durante o prazo de retenção (5 anos, SPEC §10); depois dele, é apagada. */
+/** A trilha é append-only durante o prazo de retenção (5 anos); depois dele, é apagada. */
 @Service
 class AuditRetentionService implements PurgeExpiredAuditUseCase {
 

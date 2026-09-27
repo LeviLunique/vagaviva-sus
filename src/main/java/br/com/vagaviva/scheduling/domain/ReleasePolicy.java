@@ -4,7 +4,7 @@ import br.com.vagaviva.scheduling.SlotStatus;
 import java.time.Instant;
 
 /**
- * RN-15 — política de vaga liberada (Strategy do SPEC §3): com ≥ 5 dias a vaga volta à alocação
+ * RN-15 — política de vaga liberada (padrão Strategy): com ≥ 5 dias a vaga volta à alocação
  * regular; entre 2 h e 5 dias vira oferta de encaixe; com menos de 2 h é perdida.
  */
 public final class ReleasePolicy {

@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Encaminhamento de um paciente a uma especialidade (agregado da regulação). Toda mudança de
- * estado passa por {@link #moveTo(ReferralStatus)}, que aplica as transições do SPEC §5.2.
+ * estado passa por {@link #moveTo(ReferralStatus)}, que aplica as transições permitidas em {@link ReferralStatus}.
  */
 public final class Referral {
 

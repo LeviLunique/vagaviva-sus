@@ -4,7 +4,7 @@
 - **Data:** 2026-09-25
 
 ## Contexto
-O perfil hml/prod (ADR-0003, ADR-0004) usa ECS Fargate + RDS Multi-AZ — o desenho correto para a demanda real do SUS (SPEC §11), mas com custo fixo (~US$ 75/mês em hml) mesmo quando ninguém está usando o sistema, o que não se justifica para uma apresentação de pós-graduação/hackathon com uso concentrado em poucos dias (ensaios + gravação + banca).
+O perfil hml/prod (ADR-0003, ADR-0004) usa ECS Fargate + RDS Multi-AZ — o desenho correto para a demanda real do SUS (`docs/capacity-planning.md`), mas com custo fixo (~US$ 75/mês em hml) mesmo quando ninguém está usando o sistema, o que não se justifica para uma apresentação de pós-graduação/hackathon com uso concentrado em poucos dias (ensaios + gravação + banca).
 
 ## Decisão
 Criar um segundo perfil de infraestrutura (`infra/envs/demo`), com arquitetura diferente e propósito explícito de demonstração, não de produção:
@@ -18,7 +18,7 @@ Criar um segundo perfil de infraestrutura (`infra/envs/demo`), com arquitetura d
 - Custo estimado: **~US$ 10–15/mês** com uso concentrado em poucos dias (contra ~US$ 75/mês do hml ligado o tempo todo) — ver `docs/capacity-planning.md`.
 - Primeiro acesso após ociosidade demora ~60–90 segundos (boot da instância + banco + aplicação).
 - Sem alta disponibilidade: uma única instância, sem failover automático de infraestrutura; recuperação manual em caso de falha da instância (minutos).
-- Escala verticalmente (trocar o tipo da instância), não horizontalmente — adequado para demonstração, não para a carga real projetada no SPEC §11.
+- Escala verticalmente (trocar o tipo da instância), não horizontalmente — adequado para demonstração, não para a carga real projetada em `docs/capacity-planning.md`.
 - (Atualização, ADR-0014) O código do desenho de produção saiu do repositório; o desenho e o teste de carga seguem em `docs/`. Texto original: o desenho de produção (ECS Fargate + RDS Multi-AZ) permanecia no repositório, pronto para ser reaplicado quando o sistema for usado de verdade.
 - O ambiente `hml` foi desprovisionado (`terraform destroy`) depois que o perfil demo foi validado, para eliminar o custo duplicado durante o período de apresentação; a variável `AWS_DEPLOY_ENABLED` do GitHub foi desligada para o pipeline automático de deploy não falhar tentando atualizar um ambiente que não existe mais.
 

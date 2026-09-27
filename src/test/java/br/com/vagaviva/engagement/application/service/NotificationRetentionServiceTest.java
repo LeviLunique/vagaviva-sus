@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class NotificationRetentionServiceTest {
 
     @Test
-    @DisplayName("SPEC §10: remove o texto das mensagens com mais de 90 dias")
+    @DisplayName("Retenção: remove o texto das mensagens com mais de 90 dias")
     void shouldPurgeBodiesOlderThanRetention() {
         NotificationRepository notifications = mock(NotificationRepository.class);
         Clock clock = Clock.fixed(Instant.parse("2026-12-31T12:00:00Z"), ZoneId.of("America/Sao_Paulo"));

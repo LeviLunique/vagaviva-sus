@@ -38,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
-/** SPEC: {@code AcceptOfferServiceTest} — aceite, recusa e visão da oferta. */
+/** Aceite, recusa e visão da oferta. */
 @ExtendWith(MockitoExtension.class)
 class OfferResponseServiceTest {
 

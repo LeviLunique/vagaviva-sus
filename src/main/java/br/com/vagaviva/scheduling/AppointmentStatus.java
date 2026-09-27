@@ -4,7 +4,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Estados do agendamento e transições (SPEC §5.2). */
+/** Estados do agendamento e transições. */
 public enum AppointmentStatus {
     PENDING_CONFIRMATION,
     CONFIRMED,
