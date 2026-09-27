@@ -75,6 +75,13 @@ variable "log_retention_days" {
 }
 
 variable "alarm_email" {
-  type    = string
-  default = ""
+  description = "E-mail para os alarmes (via TF_VAR_alarm_email). Vazio = sem assinatura."
+  type        = string
+  default     = ""
+}
+
+variable "otel_collector_image" {
+  description = "Coletor ADOT (OpenTelemetry) ao lado da aplicação: traces para o X-Ray e métricas (EMF) para o CloudWatch."
+  type        = string
+  default     = "public.ecr.aws/aws-observability/aws-otel-collector:v0.50.0"
 }

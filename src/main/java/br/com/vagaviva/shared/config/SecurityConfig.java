@@ -14,6 +14,13 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
@@ -43,6 +50,10 @@ public class SecurityConfig {
 
     static final String LOGIN_ROUTE = "/api/v1/auth/login";
 
+    /** A CSP restritiva vale para toda a API; a Swagger UI (fora de produção) precisa de scripts e estilos. */
+    private static final RequestMatcher NOT_SWAGGER = new NegatedRequestMatcher(new OrRequestMatcher(
+            PathPatternRequestMatcher.pathPattern("/swagger-ui/**"), PathPatternRequestMatcher.pathPattern("/v3/api-docs/**")));
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter jwtAuthenticationConverter,
             @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) throws Exception {
@@ -52,6 +63,14 @@ public class SecurityConfig {
                 exceptionResolver.resolveException(request, response, null, ex);
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                // CORS fechado: a API não é chamada por páginas de outras origens (sem cabeçalhos CORS).
+                .cors(AbstractHttpConfigurer::disable)
+                .headers(headers -> headers
+                        // Links do paciente levam o token na URL: nunca repassar a URL como Referer.
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
+                        .permissionsPolicyHeader(permissions -> permissions.policy("camera=(), microphone=(), geolocation=()"))
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(NOT_SWAGGER,
+                                new StaticHeadersWriter("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"))))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

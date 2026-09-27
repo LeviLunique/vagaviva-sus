@@ -19,37 +19,36 @@ O VagaViva é *API-first*: complementa os sistemas de regulação já usados por
 
 ## 2. Implantação na AWS (C4 — nível 2)
 
+O projeto tem **um único ambiente**, o de demonstração ([ADR-0012](adr/0012-perfil-demo-ec2-unica.md), [ADR-0014](adr/0014-ambiente-unico-demonstracao.md)), com todas as funcionalidades do MVP:
+
 ```mermaid
-flowchart TB
-  u([Usuários e pacientes]) --> cf[CloudFront HTTPS + AWS WAF]
-  cf -- VPC origin --> alb[ALB interno]
-  subgraph vpc[VPC sa-east-1 - 2 AZs]
-    subgraph priv[Subnets privadas]
-      alb --> ecs[ECS Fargate ARM64<br/>API Spring Boot + sidecar OpenTelemetry]
-    end
-    subgraph dbnet[Subnets de banco - sem internet]
-      rds[(RDS PostgreSQL 17<br/>Multi-AZ em produção)]
-    end
-    ecs --> rds
+flowchart LR
+  u([Usuários e pacientes]) --> cf[CloudFront HTTPS]
+  cf -- origem primária: VPC origin --> ec2
+  subgraph ec2[EC2 Graviton - Docker Compose]
+    api[API Spring Boot] --> pg[(PostgreSQL 17)]
+    api -- OTLP --> otel[Coletor ADOT]
   end
-  ecs <--> sqs[[SQS notificações + DLQ]]
-  ecs --> sns[SNS SMS]
-  ecs --> sm[Secrets Manager]
-  ecs --> obs[CloudWatch Logs/Métricas + X-Ray]
-  gh[GitHub Actions - OIDC] --> ecr[ECR] --> ecs
+  cf -. origem de contingência .-> wake[Lambda "acordar"<br/>protegida por OAC/SigV4]
+  wake -- liga --> ec2
+  sched[EventBridge Scheduler<br/>a cada 10 min] --> idle[Lambda "ociosidade"] -- 30 min sem acesso: desliga --> ec2
+  api <--> sqs[[SQS notificações + DLQ]]
+  api --> sm[Secrets Manager]
+  otel --> obs[CloudWatch métricas VagaViva + X-Ray]
+  gh[GitHub Actions - OIDC] --> ecr[ECR] --> ec2
+  gh -- SSM Run Command --> ec2
 ```
 
 | Camada | Serviço | Por quê |
 |---|---|---|
-| Borda | CloudFront + WAF | HTTPS sem domínio próprio, HTTP/3, cabeçalhos de segurança, regras gerenciadas (SQLi, XSS, IPs maliciosos) e *rate limit* nas rotas públicas |
-| Entrada | ALB **interno** via VPC origin | nenhum endpoint da aplicação exposto diretamente à internet |
-| Computação | ECS Fargate ARM64 (Graviton) | contêiner gerenciado, sem servidores para manter, autoscaling por CPU e por requisições, rollback automático de deploy |
-| Dados | RDS PostgreSQL 17 | transações ACID para alocação de vagas, consultas de fila e indicadores, backup/PITR, Multi-AZ |
-| Mensageria | SQS + DLQ | absorve picos de envio, isola o provedor de SMS/WhatsApp, retentativas e fila de falhas |
-| Segredos | Secrets Manager | chave JWT, credenciais do banco e senhas iniciais fora do código |
-| Observabilidade | CloudWatch + X-Ray (via ADOT) | logs estruturados, métricas técnicas e de negócio, traces, alarmes e painel |
+| Borda | CloudFront | HTTPS sem domínio próprio, HTTP/3, cabeçalhos de segurança; a instância não tem porta exposta à internet (VPC origin) |
+| Computação e dados | EC2 `t4g.medium` com API, PostgreSQL e coletor OpenTelemetry via Docker Compose | custo mínimo: liga só quando usada (Lambdas de "acordar" e de ociosidade) |
+| Mensageria | SQS + DLQ | mesma mensageria do desenho de produção: outbox → fila → canal, retentativas e fila de falhas |
+| Segredos | Secrets Manager | chave JWT, senha do banco e senhas iniciais fora do código |
+| Observabilidade | CloudWatch + X-Ray (via ADOT) | logs, métricas técnicas e de negócio, painel, alarmes e traces |
+| Entrega | GitHub Actions (OIDC) → ECR → SSM Run Command | merge em `main` publica a imagem e aplica na instância (ligando-a se preciso); o compose vem de parâmetros do SSM |
 
-Ambientes: **hml** (custo mínimo: Fargate Spot, RDS single-AZ, tasks sem regra de entrada além do ALB) e **prod** (Multi-AZ, NAT por AZ, tasks e banco isolados em subnets privadas).
+**Desenho para produção real (não provisionado):** CloudFront + WAF → ALB interno (VPC origin) → ECS Fargate ARM64 com autoscaling e rollback automático → RDS PostgreSQL Multi-AZ em subnets sem internet, NAT por AZ. Esse desenho foi implementado em Terraform e validado com teste de carga na F8 — 300 req/s em uma task de 1 vCPU com p95 de ~29 ms no ALB ([capacity-planning.md](capacity-planning.md)) — e saiu do repositório com a ADR-0014, junto com o ambiente de homologação.
 
 ## 3. Módulos (bounded contexts)
 
@@ -137,18 +136,6 @@ sequenceDiagram
 - **Traces e logs**: OTLP → ADOT → X-Ray. O contexto de trace é propagado para os listeners assíncronos (`ContextPropagatingTaskDecorator`), então o mesmo `traceId` aparece nos logs da requisição, dos listeners e nas respostas de erro (`problem+json`). Logs sem dados pessoais — verificado por `LogPrivacyIT` nos fluxos principais.
 - **Alarmes de negócio** (além dos técnicos): falhas de envio de mensagem (`vagaviva.notifications{status=FAILED}` ≥ 5 em 5 min) e alocação parada (nenhum agendamento por 2 h em horário comercial, via metric math com `HOUR`/`DAY`).
 
-## 7. Variante: perfil demo (apresentação de baixo custo)
+## 7. Religamento automático do demo
 
-Mesma aplicação (a arquitetura de software não muda), infraestrutura diferente — ver [ADR-0012](adr/0012-perfil-demo-ec2-unica.md) e [capacity-planning.md §5](capacity-planning.md).
-
-```mermaid
-flowchart LR
-  u([Usuário]) --> cf[CloudFront]
-  cf -- origem primária: VPC origin --> ec2[EC2 única<br/>API + PostgreSQL via Docker Compose]
-  cf -. origem de contingência .-> wake[Lambda "acordar"<br/>protegida por OAC/SigV4]
-  wake -- liga --> ec2
-  sched[EventBridge Scheduler<br/>a cada 10 min] --> idle[Lambda "ociosidade"]
-  idle -- sem requisições ha 30 min --> ec2
-```
-
-A CloudFront tenta sempre a EC2 primeiro; só chama a Lambda "acordar" quando a origem primária falha (instância desligada). Nenhum IP público é exposto para além da própria CloudFront: o security group da instância só aceita a porta 80 do security group gerenciado pela VPC origin da CloudFront.
+A CloudFront tenta sempre a EC2 primeiro; só chama a Lambda "acordar" quando a origem primária falha (instância desligada) e devolve uma página de "iniciando" que se atualiza sozinha. A Lambda de ociosidade desliga a instância após 30 minutos sem requisições na CloudFront, com carência de 30 minutos depois de cada boot (a métrica da CloudFront chega com atraso). Nenhum IP público é exposto além da própria CloudFront: o security group da instância só aceita a porta 80 do security group gerenciado pela VPC origin.

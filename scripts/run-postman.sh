@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Executa a coleção Postman com o Newman (testes E2E dos endpoints).
 #   ./scripts/run-postman.sh                      # ambiente local (http://localhost:8080)
-#   POSTMAN_ENV=hml ./scripts/run-postman.sh      # ambiente de homologação na AWS
+#   POSTMAN_ENV=demo BASE_URL=https://<cloudfront> ./scripts/run-postman.sh   # ambiente de demonstração na AWS
 #   BASE_URL=https://xyz.cloudfront.net ./scripts/run-postman.sh
 #   ./scripts/run-postman.sh --folder "00 - Plataforma"   # argumentos extras vão para o newman
 set -euo pipefail

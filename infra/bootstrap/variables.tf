@@ -33,9 +33,9 @@ variable "github_repo_id" {
 }
 
 variable "environments" {
-  description = "Ambientes que recebem role de deploy (devem existir como Environments no GitHub)."
+  description = "Ambientes que recebem role de deploy (devem existir como Environments no GitHub). Só o demo (ADR-0014)."
   type        = list(string)
-  default     = ["hml", "prod"]
+  default     = ["demo"]
 }
 
 variable "create_github_oidc_provider" {

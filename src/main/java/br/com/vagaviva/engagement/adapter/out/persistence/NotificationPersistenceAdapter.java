@@ -57,6 +57,11 @@ class NotificationPersistenceAdapter implements NotificationRepository {
     }
 
     @Override
+    public int purgeBodiesOlderThan(Instant limit) {
+        return repository.purgeBodies(limit, Notification.BODY_REMOVED);
+    }
+
+    @Override
     public Map<String, Long> countSentByChannel(Instant from, Instant to) {
         Map<String, Long> counts = new TreeMap<>();
         for (Object[] row : repository.countSentByChannel(from, to)) {

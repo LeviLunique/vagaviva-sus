@@ -1,4 +1,4 @@
-# Segredos da aplicação (mesmo formato do perfil hml/prod: infra/stack/database.tf e app.tf).
+# Segredos da aplicação (JWT, administrador inicial, usuários de demonstração e banco).
 # O banco roda no mesmo host (container "db" do Docker Compose), então o segredo do banco
 # guarda usuario/senha fixos gerados uma vez — o Postgres só usa POSTGRES_PASSWORD na primeira
 # inicialização do volume; reinicios seguintes (mesmo com a instância desligando/religando)

@@ -11,6 +11,8 @@ import org.jspecify.annotations.Nullable;
 public final class Notification {
 
     /** Mesmo limite de recebimentos da fila antes da DLQ (RN-24). */
+    /** Texto que substitui a mensagem depois do prazo de retenção (90 dias, SPEC §10). */
+    public static final String BODY_REMOVED = "[removido por retenção]";
     public static final int MAX_ATTEMPTS = 5;
     private static final int MAX_ERROR_LENGTH = 300;
 

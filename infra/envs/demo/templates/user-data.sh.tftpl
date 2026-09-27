@@ -1,7 +1,8 @@
 #!/bin/bash
 # Executado uma vez no primeiro boot (cloud-init). Instala Docker e o serviço systemd que,
-# a cada boot (inclusive quando a Lambda de "acordar" religa a instância), busca os segredos
-# e a tag de imagem mais recentes no SSM/Secrets Manager e sobe a aplicação com Docker Compose.
+# a cada boot (inclusive quando a Lambda de "acordar" religa a instância), busca o compose, a
+# configuração do coletor, os segredos e a tag de imagem mais recentes no SSM/Secrets Manager e
+# sobe a aplicação com Docker Compose.
 set -euxo pipefail
 
 dnf install -y docker
@@ -13,9 +14,6 @@ curl -fsSL "https://github.com/docker/compose/releases/download/${docker_compose
 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 mkdir -p /opt/vagaviva
-cat > /opt/vagaviva/docker-compose.yml <<'COMPOSE_EOF'
-${docker_compose_content}
-COMPOSE_EOF
 
 cat > /opt/vagaviva/refresh.sh <<'REFRESH_EOF'
 #!/bin/bash
@@ -25,6 +23,10 @@ export AWS_DEFAULT_REGION="${region}"
 cd /opt/vagaviva
 
 aws ecr get-login-password | docker login --username AWS --password-stdin "${ecr_registry}"
+
+# Compose e configuração do coletor ficam no SSM (atualizados pelo Terraform sem recriar a instância).
+aws ssm get-parameter --name '${compose_parameter}' --query Parameter.Value --output text > docker-compose.yml
+aws ssm get-parameter --name '${otel_config_parameter}' --query Parameter.Value --output text > otel-config.yaml
 
 IMAGE_TAG="$(aws ssm get-parameter --name '${image_tag_parameter}' --query Parameter.Value --output text)"
 export APP_IMAGE="${ecr_registry}/${ecr_repository_name}:$IMAGE_TAG"

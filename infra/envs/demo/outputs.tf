@@ -38,3 +38,11 @@ output "wake_lambda_function_name" {
 output "idle_shutdown_lambda_function_name" {
   value = aws_lambda_function.idle_shutdown.function_name
 }
+
+output "dashboard_url" {
+  value = "https://${local.region}.console.aws.amazon.com/cloudwatch/home?region=${local.region}#dashboards:name=${aws_cloudwatch_dashboard.demo.dashboard_name}"
+}
+
+output "alarms_topic_arn" {
+  value = aws_sns_topic.alarms.arn
+}

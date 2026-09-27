@@ -42,6 +42,12 @@ server:
   forward-headers-strategy: framework
   error:
     include-stacktrace: never
+  # F8 (OWASP API4): limites de requisição — cabeçalhos até 16 KB; formulários (não usados) até 64 KB.
+  # O corpo JSON é limitado pelo RequestBodyLimitFilter (vagaviva.http.max-request-body).
+  max-http-request-header-size: 16KB
+  tomcat:
+    max-http-form-post-size: 64KB
+    max-swallow-size: 1MB
 
 management:
   endpoints:
@@ -83,6 +89,13 @@ springdoc:
 
 vagaviva:
   time-zone: America/Sao_Paulo
+  http:
+    max-request-body: 256KB
+  # SPEC §10 (LGPD): texto das mensagens 90 dias; trilha de auditoria 5 anos. Execução diária às 03:30.
+  retention:
+    notification-body: P90D
+    audit-events: P5Y
+    cron: "0 30 3 * * *"
   public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
   api:
     version: v1

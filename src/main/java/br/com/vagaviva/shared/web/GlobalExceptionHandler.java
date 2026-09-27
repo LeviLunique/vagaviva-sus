@@ -70,6 +70,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(problem(ErrorCode.ACCESS_DENIED, "Seu perfil não tem permissão para esta operação."));
     }
 
+    @ExceptionHandler(PayloadTooLargeException.class)
+    ResponseEntity<ProblemDetail> handlePayloadTooLarge(PayloadTooLargeException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(problem(ErrorCode.PAYLOAD_TOO_LARGE, ex.getMessage()));
+    }
+
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ResponseEntity<ProblemDetail> handleConcurrentModification() {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem(ErrorCode.CONFLICT, "CONCURRENT_MODIFICATION",

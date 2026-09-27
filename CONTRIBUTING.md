@@ -4,13 +4,13 @@
 
 | Branch | Origem | Destino (PR) | Uso |
 |---|---|---|---|
-| `main` | — | — | Produção. Só recebe `release/*` e `hotfix/*`. Cada merge gera a tag `vX.Y.Z`. |
-| `develop` | `main` | — | Integração contínua; implantada automaticamente em homologação. Branch padrão. |
+| `main` | — | — | Versões liberadas. Só recebe `release/*` e `hotfix/*`; cada merge é publicado no ambiente de demonstração pelo CD e recebe a tag `vX.Y.Z`. |
+| `develop` | `main` | — | Integração contínua (CI completo em cada PR). Branch padrão. |
 | `feature/<slug>` | `develop` | `develop` | Nova funcionalidade (ex.: `feature/f3-regulation-queue`). |
 | `bugfix/<slug>` | `develop` | `develop` | Correção antes da release. |
 | `chore/<slug>`, `docs/<slug>` | `develop` | `develop` | Manutenção e documentação. |
 | `release/x.y.z` | `develop` | `main` (e back-merge em `develop`) | Estabilização da versão. |
-| `hotfix/x.y.z` | `main` | `main` (e back-merge em `develop`) | Correção urgente em produção. |
+| `hotfix/x.y.z` | `main` | `main` (e back-merge em `develop`) | Correção urgente na versão publicada. |
 
 Regras aplicadas automaticamente (workflow **PR Policy** + proteções de branch):
 - `main` e `develop` não aceitam push direto nem force-push; todo merge passa por PR com todos os checks verdes.

@@ -4,7 +4,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-export AWS_PROFILE="${AWS_PROFILE:-vagaviva-sso}"
+# Localmente usa o perfil SSO; no GitHub Actions as credenciais vêm do OIDC (sem perfil).
+if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
+  export AWS_PROFILE="${AWS_PROFILE:-vagaviva-sso}"
+fi
 export AWS_REGION="${AWS_REGION:-sa-east-1}"
 export AWS_DEFAULT_REGION="$AWS_REGION"
 PROJECT="vagaviva"

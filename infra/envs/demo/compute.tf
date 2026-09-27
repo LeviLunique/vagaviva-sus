@@ -28,6 +28,26 @@ resource "aws_ssm_parameter" "image_tag" {
   }
 }
 
+# Compose e configuração do coletor lidos pelo refresh.sh a cada boot: mudar o compose não exige
+# recriar a instância (o user_data só roda no primeiro boot).
+resource "aws_ssm_parameter" "compose" {
+  name  = "/${local.project}/${local.env}/runtime/docker-compose"
+  type  = "String"
+  value = local.docker_compose_content
+}
+
+resource "aws_ssm_parameter" "otel_config" {
+  name  = "/${local.project}/${local.env}/runtime/otel-config"
+  type  = "String"
+  value = local.otel_config
+}
+
+# Métricas de negócio em EMF (o ADOT grava aqui e o CloudWatch extrai para o namespace VagaViva).
+resource "aws_cloudwatch_log_group" "metrics" {
+  name              = "/ec2/${local.name}/metrics"
+  retention_in_days = var.log_retention_days
+}
+
 # Quebra o ciclo instância -> CloudFront -> instância: a URL real só existe depois que a
 # instância (origem da CloudFront) já foi criada. scripts/aws/infra.sh preenche o valor real
 # logo após o primeiro apply; o refresh.sh busca este parâmetro a cada boot.
@@ -47,11 +67,41 @@ locals {
     spring_profiles          = var.spring_profiles
     notifications_queue_name = aws_sqs_queue.notifications.name
     log_group_name           = aws_cloudwatch_log_group.instance.name
+    otel_collector_image     = var.otel_collector_image
+  })
+
+  # ADOT (F7): traces para o X-Ray; métricas (EMF) no namespace VagaViva com os agregados sem dimensão
+  # e por dimensão única — os alarmes de negócio usam {status}.
+  otel_config = yamlencode({
+    extensions = { health_check = {} }
+    receivers  = { otlp = { protocols = { grpc = { endpoint = "0.0.0.0:4317" }, http = { endpoint = "0.0.0.0:4318" } } } }
+    processors = {
+      "batch/traces"     = { timeout = "1s", send_batch_size = 50 }
+      "batch/metrics"    = { timeout = "60s" }
+      resource_detection = { detectors = ["env", "ec2"] }
+    }
+    exporters = {
+      awsxray = { region = local.region }
+      awsemf = {
+        region                  = local.region
+        namespace               = "VagaViva"
+        log_group_name          = aws_cloudwatch_log_group.metrics.name
+        dimension_rollup_option = "ZeroAndSingleDimensionRollup"
+      }
+    }
+    service = {
+      extensions = ["health_check"]
+      pipelines = {
+        traces  = { receivers = ["otlp"], processors = ["resource_detection", "batch/traces"], exporters = ["awsxray"] }
+        metrics = { receivers = ["otlp"], processors = ["resource_detection", "batch/metrics"], exporters = ["awsemf"] }
+      }
+    }
   })
 
   user_data = templatefile("${path.module}/templates/user-data.sh.tftpl", {
     docker_compose_version    = var.docker_compose_version
-    docker_compose_content    = local.docker_compose_content
+    compose_parameter         = aws_ssm_parameter.compose.name
+    otel_config_parameter     = aws_ssm_parameter.otel_config.name
     region                    = local.region
     ecr_registry              = local.ecr_registry
     ecr_repository_name       = var.ecr_repository_name
@@ -102,9 +152,10 @@ data "aws_iam_policy_document" "instance" {
   }
 
   statement {
-    sid       = "ReadParameters"
-    actions   = ["ssm:GetParameter"]
-    resources = [aws_ssm_parameter.image_tag.arn, aws_ssm_parameter.public_base_url.arn]
+    sid     = "ReadParameters"
+    actions = ["ssm:GetParameter"]
+    resources = [aws_ssm_parameter.image_tag.arn, aws_ssm_parameter.public_base_url.arn,
+    aws_ssm_parameter.compose.arn, aws_ssm_parameter.otel_config.arn]
   }
 
   statement {
@@ -139,7 +190,13 @@ data "aws_iam_policy_document" "instance" {
       "logs:CreateLogStream",
       "logs:PutLogEvents",
       "logs:DescribeLogStreams",
+      "logs:DescribeLogGroups",
       "cloudwatch:PutMetricData",
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets",
+      "xray:GetSamplingStatisticSummaries",
     ]
     resources = ["*"]
   }
@@ -181,4 +238,10 @@ resource "aws_instance" "app" {
   }
 
   tags = { Name = local.name }
+
+  # O user_data só roda no primeiro boot: mudanças nele não devem parar/recriar a instância (e apagar
+  # o banco). Compose e coletor são atualizados pelos parâmetros do SSM (refresh.sh a cada boot).
+  lifecycle {
+    ignore_changes = [user_data]
+  }
 }

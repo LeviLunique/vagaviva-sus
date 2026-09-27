@@ -1,5 +1,5 @@
 # Fila real de notificações (não é o ElasticMQ do docker-compose local) — mesmo desenho do
-# perfil hml/prod (infra/stack/messaging.tf), em escala mínima.
+# desenho de produção (docs/architecture.md), em escala mínima.
 
 resource "aws_sqs_queue" "notifications_dlq" {
   name                      = "${local.name}-notifications-dlq"

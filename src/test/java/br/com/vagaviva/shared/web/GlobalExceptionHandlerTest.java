@@ -149,6 +149,13 @@ class GlobalExceptionHandlerTest {
         assertThat(ErrorCode.NOT_FOUND.type()).hasToString("https://vagaviva.dev/problems/not-found");
     }
 
+    @Test
+    @DisplayName("F8: corpo grande demais ⇒ 413 problem+json com o limite")
+    void shouldMapPayloadTooLarge() {
+        assertThat(mvc.get().uri("/probe/too-large")).hasStatus(413).bodyJson().extractingPath("$.detail")
+                .asString().contains("256 KB");
+    }
+
     @RestController
     static class ProbeController {
 
@@ -165,6 +172,11 @@ class GlobalExceptionHandlerTest {
                 case "unauthenticated" -> new UnauthenticatedException(code, message);
                 default -> new CustomConflict(code, message);
             };
+        }
+
+        @GetMapping("/probe/too-large")
+        void tooLarge() {
+            throw new PayloadTooLargeException(256 * 1024);
         }
 
         @PostMapping("/probe/body")

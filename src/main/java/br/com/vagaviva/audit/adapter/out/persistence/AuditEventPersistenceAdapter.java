@@ -4,6 +4,7 @@ import br.com.vagaviva.audit.application.port.in.AuditEventQuery;
 import br.com.vagaviva.audit.application.port.out.AuditEventRepository;
 import br.com.vagaviva.audit.domain.AuditEvent;
 import jakarta.persistence.criteria.Predicate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -56,5 +57,10 @@ class AuditEventPersistenceAdapter implements AuditEventRepository {
             }
             return builder.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    @Override
+    public int deleteOlderThan(Instant limit) {
+        return repository.deleteByOccurredAtBefore(limit);
     }
 }

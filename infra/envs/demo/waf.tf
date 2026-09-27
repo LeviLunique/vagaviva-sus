@@ -1,5 +1,5 @@
 # WAF opcional (desligado por padrao no perfil demo - custo; ver var.enable_waf e ADR-0012).
-# Versao enxuta do WAF do perfil hml/prod (infra/stack/edge.tf): regras gerenciadas da AWS +
+# Versao enxuta do WAF do desenho de producao (docs/security.md): regras gerenciadas da AWS +
 # um unico limite de taxa global (sem a distincao de rota publica, para manter simples).
 
 resource "aws_wafv2_web_acl" "demo" {

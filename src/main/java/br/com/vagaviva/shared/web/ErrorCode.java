@@ -18,6 +18,7 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(405, "Método não suportado"),
     CONFLICT(409, "Conflito"),
     GONE(410, "Recurso expirado"),
+    PAYLOAD_TOO_LARGE(413, "Requisição grande demais"),
     UNSUPPORTED_MEDIA_TYPE(415, "Tipo de conteúdo não suportado"),
     VALIDATION_FAILED(422, "Dados inválidos"),
     BUSINESS_RULE_VIOLATED(422, "Regra de negócio violada"),
