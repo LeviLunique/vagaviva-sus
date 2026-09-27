@@ -1,19 +1,12 @@
 name: Deploy
 
-# develop → hml | tag vX.Y.Z (criada no merge de release/hotfix em main) → prod.
-# Autenticação via OIDC (sem access keys). A role de deploy só publica a imagem e atualiza o ECS;
-# mudanças de infraestrutura são aplicadas com Terraform (scripts/aws/infra.sh).
+# main → demo (ADR-0014, o único ambiente): build ARM64 → ECR (tag = SHA) → liga a EC2 se estiver
+# parada e aplica via SSM (scripts/aws/demo-deploy.sh) → health → Newman. Autenticação por OIDC
+# (sem access keys); infraestrutura continua aplicada com Terraform (scripts/aws/infra.sh).
 on:
   push:
-    branches: [develop]
-    tags: ['v*.*.*']
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: Ambiente de destino
-        type: choice
-        options: [hml, prod]
-        default: hml
 
 permissions:
   id-token: write
@@ -21,16 +14,15 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy
+    name: Deploy (demo)
     if: vars.AWS_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 40
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (startsWith(github.ref, 'refs/tags/') && 'prod' || 'hml') }}
+    environment: demo
     concurrency:
-      group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || (startsWith(github.ref, 'refs/tags/') && 'prod' || 'hml') }}
+      group: deploy-demo
       cancel-in-progress: false
     env:
-      ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (startsWith(github.ref, 'refs/tags/') && 'prod' || 'hml') }}
       AWS_REGION: ${{ vars.AWS_REGION }}
       IMAGE_TAG: ${{ github.sha }}
     steps:
@@ -60,28 +52,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Atualizar serviço ECS
-        run: ./scripts/aws/deploy-image.sh "$ENVIRONMENT" "$IMAGE_TAG"
-
-      - name: Smoke test
-        env:
-          APP_BASE_URL: ${{ vars.APP_BASE_URL }}
-        run: |
-          for i in $(seq 1 30); do
-            if curl -fsS "$APP_BASE_URL/actuator/health" | grep -q '"UP"'; then echo "✔ UP"; exit 0; fi
-            sleep 10
-          done
-          echo "::error::Health check falhou em $APP_BASE_URL"; exit 1
+      - name: Aplicar no demo (SSM)
+        run: ./scripts/aws/demo-deploy.sh "$IMAGE_TAG"
 
       - uses: actions/setup-node@v7
-        if: env.ENVIRONMENT == 'hml'
         with:
           node-version: '22'
 
       - name: Testes de API no ambiente (Newman)
-        if: env.ENVIRONMENT == 'hml'
         env:
-          POSTMAN_ENV: hml
+          POSTMAN_ENV: demo
           BASE_URL: ${{ vars.APP_BASE_URL }}
           BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
           DEMO_USERS_PASSWORD: ${{ secrets.DEMO_USERS_PASSWORD }}

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bootstrap único da conta AWS + configuração do GitHub (environments e variáveis).
-# Cria: bucket de estado do Terraform, ECR, roles OIDC de deploy (hml/prod) e orçamento mensal.
+# Cria: bucket de estado do Terraform, ECR, role OIDC de deploy do demo (ADR-0014) e orçamento mensal.
 # Uso: TF_VAR_budget_alert_email=voce@exemplo.com ./scripts/aws/bootstrap.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 STACK="$ROOT_DIR/infra/bootstrap"
@@ -24,17 +24,22 @@ else
   rm -f "$STACK/terraform.tfstate" "$STACK/terraform.tfstate.backup"
 fi
 
-log "Configurando GitHub ($GITHUB_REPO): environments, políticas de deploy e variáveis"
-for env in hml prod; do
-  gh api -X PUT "repos/$GITHUB_REPO/environments/$env" --input - >/dev/null <<JSON
+log "Configurando GitHub ($GITHUB_REPO): environment demo, política de deploy e variáveis"
+gh api -X PUT "repos/$GITHUB_REPO/environments/demo" --input - >/dev/null <<JSON
 {"deployment_branch_policy": {"protected_branches": false, "custom_branch_policies": true}}
 JSON
-  role_arn="$(terraform -chdir="$STACK" output -json deploy_role_arns | jq -r --arg e "$env" '.[$e]')"
-  gh variable set AWS_DEPLOY_ROLE_ARN --env "$env" --repo "$GITHUB_REPO" --body "$role_arn"
-done
-# hml só recebe deploy de develop; prod só de tags vX.Y.Z.
-gh api "repos/$GITHUB_REPO/environments/hml/deployment-branch-policies" -f name=develop -f type=branch >/dev/null 2>&1 || true
-gh api "repos/$GITHUB_REPO/environments/prod/deployment-branch-policies" -f name='v*.*.*' -f type=tag >/dev/null 2>&1 || true
+# O demo só recebe deploy da main (merge de release/hotfix).
+gh api "repos/$GITHUB_REPO/environments/demo/deployment-branch-policies" -f name=main -f type=branch >/dev/null 2>&1 || true
+role_arn="$(terraform -chdir="$STACK" output -json deploy_role_arns | jq -r '.demo')"
+gh variable set AWS_DEPLOY_ROLE_ARN --env demo --repo "$GITHUB_REPO" --body "$role_arn"
+# URL e senhas usadas pelo Newman do CD (existem depois do primeiro ./scripts/aws/infra.sh demo apply).
+if url="$(aws ssm get-parameter --name "/$PROJECT/demo/api/public-base-url" --query Parameter.Value --output text 2>/dev/null)"; then
+  gh variable set APP_BASE_URL --env demo --repo "$GITHUB_REPO" --body "$url"
+fi
+if app="$(aws secretsmanager get-secret-value --secret-id "$PROJECT-demo/app" --query SecretString --output text 2>/dev/null)"; then
+  jq -r .BOOTSTRAP_ADMIN_PASSWORD <<<"$app" | gh secret set BOOTSTRAP_ADMIN_PASSWORD --env demo --repo "$GITHUB_REPO"
+  jq -r .DEMO_USERS_PASSWORD <<<"$app" | gh secret set DEMO_USERS_PASSWORD --env demo --repo "$GITHUB_REPO"
+fi
 
 gh variable set AWS_REGION --repo "$GITHUB_REPO" --body "$AWS_REGION"
 gh variable set ECR_REPOSITORY --repo "$GITHUB_REPO" --body "$ECR_REPOSITORY"

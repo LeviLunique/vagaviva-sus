@@ -208,29 +208,40 @@ data "aws_iam_policy_document" "deploy" {
     resources = [aws_ecr_repository.api.arn]
   }
 
+  # Deploy no demo (ADR-0014): liga a EC2 do ambiente se estiver parada e aplica a nova imagem pelo
+  # SSM Run Command (/opt/vagaviva/refresh.sh). Só a instância com a tag Name do ambiente.
   statement {
-    sid       = "EcsTaskDefinitions"
-    actions   = ["ecs:DescribeTaskDefinition", "ecs:RegisterTaskDefinition", "ecs:TagResource"]
+    sid       = "DescribeForDeploy"
+    actions   = ["ec2:DescribeInstances", "ssm:DescribeInstanceInformation", "ssm:GetCommandInvocation", "ssm:ListCommandInvocations"]
     resources = ["*"]
   }
 
   statement {
-    sid     = "EcsService"
-    actions = ["ecs:DescribeServices", "ecs:UpdateService"]
-    resources = [
-      "arn:aws:ecs:${var.region}:${local.account_id}:service/${var.project}-${each.key}/${var.project}-${each.key}-api",
-    ]
+    sid       = "StartEnvironmentInstance"
+    actions   = ["ec2:StartInstances"]
+    resources = ["arn:aws:ec2:${var.region}:${local.account_id}:instance/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Name"
+      values   = ["${var.project}-${each.key}"]
+    }
   }
 
   statement {
-    sid       = "PassTaskRoles"
-    actions   = ["iam:PassRole"]
-    resources = ["arn:aws:iam::${local.account_id}:role/${var.project}-${each.key}-*"]
+    sid       = "RefreshEnvironmentInstance"
+    actions   = ["ssm:SendCommand"]
+    resources = ["arn:aws:ec2:${var.region}:${local.account_id}:instance/*"]
     condition {
       test     = "StringEquals"
-      variable = "iam:PassedToService"
-      values   = ["ecs-tasks.amazonaws.com"]
+      variable = "aws:ResourceTag/Name"
+      values   = ["${var.project}-${each.key}"]
     }
+  }
+
+  statement {
+    sid       = "RunShellScriptDocument"
+    actions   = ["ssm:SendCommand"]
+    resources = ["arn:aws:ssm:${var.region}::document/AWS-RunShellScript"]
   }
 
   statement {
@@ -243,7 +254,7 @@ data "aws_iam_policy_document" "deploy" {
 resource "aws_iam_role" "deploy" {
   for_each             = toset(var.environments)
   name                 = "${var.project}-gha-deploy-${each.key}"
-  description          = "GitHub Actions (${var.github_owner}/${var.github_repo}) - deploy da API em ${each.key}"
+  description          = "GitHub Actions (${var.github_owner}/${var.github_repo}) - deploy da API no ambiente ${each.key}"
   assume_role_policy   = data.aws_iam_policy_document.deploy_trust[each.key].json
   max_session_duration = 3600
 }
