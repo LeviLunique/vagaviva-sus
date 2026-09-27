@@ -5,7 +5,7 @@
 - **Substitui:** o uso de ECS Fargate/RDS da ADR-0003 como ambiente provisionado (a ADR-0003 fica como desenho de referência)
 
 ## Contexto
-O VagaViva é o MVP de um trabalho de pós-graduação/hackathon. Não haverá operação real em um ente: o que importa é demonstrar a aplicação completa funcionando. O desenho de produção (ECS Fargate + RDS Multi-AZ + ALB + WAF, ADR-0003/0008) foi implementado em Terraform e validado na F8 com teste de carga (RNF-01 comprovado: p95 ≈ 29 ms no ALB a 300 req/s em uma task de 1 vCPU), mas manter hml e prod custaria ~US$ 75 e ~US$ 350 por mês sem uso.
+O VagaViva é o MVP de um trabalho de pós-graduação/hackathon. Não haverá operação real em um ente: o que importa é demonstrar a aplicação completa funcionando. O desenho de produção (ECS Fargate + RDS Multi-AZ + ALB + WAF, ADR-0003/0008) foi implementado em Terraform e validado na F8 com teste de carga (RNF-01 comprovado: p95 ≈ 29 ms no ALB a 300 req/s em uma task de 1 vCPU), mas manter hml e prod custaria ~US$ 75 e ~US$ 360 por mês sem uso.
 
 ## Decisão
 - O ambiente de **demonstração** (ADR-0012: CloudFront + uma EC2 com API e PostgreSQL) é o **único** ambiente, com **todas** as funcionalidades do MVP — inclusive a observabilidade da F7: coletor ADOT ao lado da aplicação, métricas de negócio no CloudWatch (namespace `VagaViva`), painel, alarmes e traces no X-Ray.

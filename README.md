@@ -18,6 +18,20 @@ API REST para **regulação ambulatorial do SUS** com **confirmação ativa** do
 
 O VagaViva fecha o circuito **agendar → confirmar → reaproveitar** e entrega esses indicadores ao gestor.
 
+## Demonstração ao vivo
+
+| | |
+|---|---|
+| API (ambiente de demonstração na AWS) | https://ddueuk9rcxkpp.cloudfront.net |
+| Swagger UI | https://ddueuk9rcxkpp.cloudfront.net/swagger-ui.html |
+| Versão | [v1.0.0](CHANGELOG.md) |
+
+- A instância **liga sozinha no primeiro acesso** (página "Iniciando o VagaViva…", 60–90 s) e desliga após 30 min sem uso — é a forma de manter o MVP completo no ar com custo de poucos dólares por mês ([ADR-0014](docs/adr/0014-ambiente-unico-demonstracao.md)).
+- Dados **100% fictícios** (seed de demonstração). As mensagens ao paciente usam o canal *sandbox*: o texto que iria por SMS/WhatsApp fica consultável em `GET /api/v1/dev/sandbox/messages?patientId=…` (ADMIN).
+- As senhas dos usuários de demonstração do ambiente na AWS não são publicadas; para explorar sem pedir acesso, rode localmente (seção [Como executar](#como-executar)) — o `.env.example` traz as senhas locais.
+
+Documentação: [arquitetura](docs/architecture.md) · [segurança e LGPD](docs/security.md) · [capacidade e teste de carga](docs/capacity-planning.md) · [runbook](docs/runbook.md) · [ADRs](docs/adr/) · [changelog](CHANGELOG.md) · [como contribuir](CONTRIBUTING.md).
+
 ## Stack e requisitos
 
 - Java 25, Maven 3.9+ (wrapper incluso)
@@ -89,9 +103,9 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 25)"
 | `SQS_NOTIFICATIONS_QUEUE` | `vagaviva-local-notifications` | fila de envio das mensagens ao paciente (DLQ após 5 recebimentos) |
 | `WHATSAPP_PHONE_NUMBER_ID` | vazio | número de origem do WhatsApp (AWS End User Messaging Social) — só com o canal ligado |
 | `AWS_REGION` | `sa-east-1` | região AWS |
-| `OTEL_EXPORT_ENABLED` | `false` | exporta traces e métricas via OTLP (ligado no ECS, onde há o sidecar ADOT; desligado local e no demo) |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | coletor OTLP (sidecar ADOT) |
-| `TRACING_SAMPLING_PROBABILITY` | `0.1` | fração das requisições com trace exportado (o `traceId` vai para os logs sempre) |
+| `OTEL_EXPORT_ENABLED` | `false` | exporta traces e métricas via OTLP (ligado no demo, onde o coletor ADOT roda ao lado da API; desligado local) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | coletor OTLP (ADOT) |
+| `TRACING_SAMPLING_PROBABILITY` | `0.1` | fração das requisições com trace exportado (demo: `1.0`; o `traceId` vai para os logs sempre) |
 
 Novas variáveis são adicionadas a cada módulo entregue (ver `.env.example`).
 
@@ -187,17 +201,24 @@ docker compose up -d --build --wait
 - Outro host: `BASE_URL="https://<distribuicao>.cloudfront.net" POSTMAN_ENV=demo BOOTSTRAP_ADMIN_PASSWORD=... DEMO_USERS_PASSWORD=... ./scripts/run-postman.sh`.
 - Relatório JUnit em `target/newman/`.
 
+### Coleção do vídeo de demonstração
+`postman/vagaviva-demo-video.postman_collection.json` conta a história completa do MVP com personagens fictícios: a pasta **Preparação** monta a massa (pacientes na fila de Cardiologia, consultas de hoje para check-in e falta, uma consulta confirmada que será cancelada) e a pasta **Gravação** percorre o fluxo na ordem do vídeo — cadastro, encaminhamento, regulação com risco, fila PNR-SUS, alocação automática, mensagem com link, confirmação, cancelamento, encaixe em cascata (o primeiro aceite vence, o segundo recebe 409), check-in, falta e indicadores. A preparação depende do relógio: rode-a cerca de 3 h antes, entre 07:00 e 15:00 (Brasília).
+```bash
+POSTMAN_COLLECTION=postman/vagaviva-demo-video.postman_collection.json ./scripts/run-postman.sh --folder Preparação
+```
+
 ## Testes e qualidade
 ```bash
 ./mvnw verify   # unitários (*Test) + integração com PostgreSQL real (*IT, Testcontainers) + gate de cobertura
 ```
 - Cobertura mesclada (unitários + integração) em `target/site/jacoco/index.html`; o build falha abaixo de **80%** de linhas ou branches.
 - `ModularityTest` (Spring Modulith) e `HexagonalArchitectureTest` (ArchUnit) impedem ciclos entre módulos e dependências indevidas entre camadas.
+- Na v1.0.0: 464 testes unitários e 66 de integração, **98,8%** de linhas e **92,7%** de branches cobertos; coleção Postman com 189 requests e 474 asserções.
 - Desenvolvimento orientado a testes (TDD) e princípios SOLID — veja [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## CI/CD e fluxo de trabalho
 - **GitFlow**: `feature/*` → `develop` → `release/x.y.z` → `main` (tag `vX.Y.Z`); `hotfix/x.y.z` a partir de `main`.
-- **CI** (todo PR): build e testes com cobertura, testes de API (Newman), validação do Terraform, varredura de vulnerabilidades (Trivy), análise estática (CodeQL) e política de PR (fluxo de branches, Conventional Commits e autoria).
+- **CI** (todo PR): build e testes com cobertura, testes de API (Newman), validação do Terraform, varredura de vulnerabilidades (Trivy), análise estática (CodeQL e SonarCloud) e política de PR (fluxo de branches, Conventional Commits e autoria).
 - **Deploy** automático via OIDC (sem chaves de acesso): merge em `main` → ambiente de demonstração — build ARM64, ECR (tag = SHA), liga a instância se estiver parada, aplica via SSM, health e Newman no ambiente ([ADR-0014](docs/adr/0014-ambiente-unico-demonstracao.md)).
 
 ## Infraestrutura AWS
