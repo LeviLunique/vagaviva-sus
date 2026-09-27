@@ -2,7 +2,7 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões em [SemVer](https://semver.org/lang/pt-BR/).
 
-## [Unreleased]
+## [1.0.2] — 2026-09-27
 
 ### Adicionado
 - README com os links dos vídeos do pitch e do MVP e da pasta pública com os materiais da entrega.
