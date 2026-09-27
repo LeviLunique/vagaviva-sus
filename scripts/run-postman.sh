@@ -4,11 +4,12 @@
 #   POSTMAN_ENV=demo BASE_URL=https://<cloudfront> ./scripts/run-postman.sh   # ambiente de demonstração na AWS
 #   BASE_URL=https://xyz.cloudfront.net ./scripts/run-postman.sh
 #   ./scripts/run-postman.sh --folder "00 - Plataforma"   # argumentos extras vão para o newman
+#   POSTMAN_COLLECTION=postman/vagaviva-demo-video.postman_collection.json ./scripts/run-postman.sh --folder Preparação
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 POSTMAN_ENV="${POSTMAN_ENV:-local}"
-COLLECTION="postman/vagaviva-api.postman_collection.json"
+COLLECTION="${POSTMAN_COLLECTION:-postman/vagaviva-api.postman_collection.json}"
 ENVIRONMENT="postman/vagaviva-${POSTMAN_ENV}.postman_environment.json"
 REPORT_DIR="target/newman"
 NEWMAN_VERSION="${NEWMAN_VERSION:-6.1.3}"

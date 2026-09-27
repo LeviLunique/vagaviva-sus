@@ -1,0 +1,5053 @@
+{
+  "info": {
+    "_postman_id": "260382e2-56d4-52d9-beb8-ea68099dc2c7",
+    "name": "VagaViva API — gravação",
+    "description": "Coleção do vídeo de demonstração do MVP: conta a história da Dona Maria (encaminhada, regulada, agendada e confirmada) e o reaproveitamento da vaga que o Seu Raimundo cancelou (encaixe em cascata, primeiro aceite vence).\n\n1. Selecione o ambiente `VagaViva - demo` (ou `VagaViva - local` para ensaiar) e preencha `adminPassword` e `demoPassword` localmente (tipo *secret*; nunca versione).\n2. Rode a pasta **Preparação** cerca de 3 h antes de gravar (entre 07:00 e 15:00, horário de Brasília).\n3. Logo antes de gravar, rode `Preparação › P08`.\n4. Grave executando os requests da pasta **Gravação** na ordem.\n\nPelo Newman: `POSTMAN_COLLECTION=postman/vagaviva-demo-video.postman_collection.json ./scripts/run-postman.sh --folder Preparação` (e, depois, `--folder Gravação`).\n\nTokens, ids e links gerados são variáveis da **coleção**: não crie variáveis com os mesmos nomes no ambiente (as de ambiente têm precedência). Todos os pacientes são fictícios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Preparação",
+      "description": "Monta a massa do vídeo (roteiro, seção 3.3). Rode a pasta inteira de uma vez (Run folder), **cerca de 3 h antes** da gravação e entre 07:00 e 15:00 (horário de Brasília): a vaga do Antônio já terá passado e a da Lúcia ainda será hoje. Fica recolhida no vídeo. Os blocos 9, 10 e 11 consomem a massa.",
+      "item": [
+        {
+          "name": "P01 Logins (5 papéis)",
+          "description": "Renove os tokens até 10 min antes de gravar (o JWT vale 60 min).",
+          "item": [
+            {
+              "name": "Login ADMIN",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel ADMIN', () => pm.expect(pm.response.json().user.role).to.eql('ADMIN'));",
+                      "pm.collectionVariables.set('tokenAdmin', pm.response.json().accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "30128483-59f0-5167-b810-523a13c53304",
+              "response": []
+            },
+            {
+              "name": "Login REQUESTER (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel REQUESTER', () => pm.expect(pm.response.json().user.role).to.eql('REQUESTER'));",
+                      "pm.collectionVariables.set('tokenRequester', pm.response.json().accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"requester@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "0a680403-fc69-5d4e-a2a2-8b90d2f34658",
+              "response": []
+            },
+            {
+              "name": "Login REGULATOR (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel REGULATOR', () => pm.expect(pm.response.json().user.role).to.eql('REGULATOR'));",
+                      "pm.collectionVariables.set('tokenRegulator', pm.response.json().accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"regulator@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "a09d004e-0cae-5182-9d37-a1935d5a62b1",
+              "response": []
+            },
+            {
+              "name": "Login SCHEDULER (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel SCHEDULER', () => pm.expect(pm.response.json().user.role).to.eql('SCHEDULER'));",
+                      "pm.collectionVariables.set('tokenScheduler', pm.response.json().accessToken);",
+                      "pm.collectionVariables.set('unitPoliclinicaId', pm.response.json().user.healthUnitId);",
+                      "pm.test('agendador vinculado a uma policlínica', () => pm.expect(pm.response.json().user.healthUnitId).to.be.a('string'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"scheduler@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "ff03b3f6-ea54-5d8f-884e-47c75b9e7f13",
+              "response": []
+            },
+            {
+              "name": "Login MANAGER (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel MANAGER', () => pm.expect(pm.response.json().user.role).to.eql('MANAGER'));",
+                      "pm.collectionVariables.set('tokenManager', pm.response.json().accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"manager@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "1c8db435-49ee-5490-8174-050be7b1e2bc",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "P02 Conferir especialidade limpa",
+          "description": "Se algum teste falhar, a especialidade já tem massa de uma preparação anterior: as ofertas iriam para as pessoas erradas. No local, `docker compose down -v`; no demo, avise antes de gravar.",
+          "item": [
+            {
+              "name": "Especialidade Cardiologia (seed)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "const cardio = pm.response.json().find(s => s.code === 'CARDIO');",
+                      "pm.test('Cardiologia do seed existe', () => pm.expect(cardio).to.not.be.undefined);",
+                      "pm.collectionVariables.set('specialtyCardioId', cardio.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/specialties",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "specialties"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "c8974849-8cfd-5b41-9c3f-45137c03e481",
+              "response": []
+            },
+            {
+              "name": "Fila da Cardiologia vazia",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('ninguém na fila da Cardiologia (senão as ofertas vão para outras pessoas)', () => pm.expect(pm.response.json().content).to.have.lengthOf(0));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/queues/{{specialtyCardioId}}?size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "queues",
+                    "{{specialtyCardioId}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "ae63db17-c831-5da7-ad62-b963bc9b7e59",
+              "response": []
+            },
+            {
+              "name": "Nenhuma vaga futura livre",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('nowIso', new Date().toISOString());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('nenhuma vaga AVAILABLE futura na Cardiologia', () => pm.expect(pm.response.json().content).to.have.lengthOf(0));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slots?specialtyId={{specialtyCardioId}}&from={{nowIso}}&status=AVAILABLE&size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slots"
+                  ],
+                  "query": [
+                    {
+                      "key": "specialtyId",
+                      "value": "{{specialtyCardioId}}"
+                    },
+                    {
+                      "key": "from",
+                      "value": "{{nowIso}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "AVAILABLE"
+                    },
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "db238c64-4c35-5577-a486-e1f89357cbd0",
+              "response": []
+            },
+            {
+              "name": "Nenhuma vaga em oferta",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('nenhuma vaga OPEN_FOR_OFFERS na Cardiologia', () => pm.expect(pm.response.json().content).to.have.lengthOf(0));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slots?specialtyId={{specialtyCardioId}}&from={{nowIso}}&status=OPEN_FOR_OFFERS&size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slots"
+                  ],
+                  "query": [
+                    {
+                      "key": "specialtyId",
+                      "value": "{{specialtyCardioId}}"
+                    },
+                    {
+                      "key": "from",
+                      "value": "{{nowIso}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "OPEN_FOR_OFFERS"
+                    },
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "d82bc0b3-f168-5eb4-b9be-a8ea77784055",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "P03 Encaminhar e aprovar Antônio e Lúcia",
+          "description": "",
+          "item": [
+            {
+              "name": "Paciente Antônio",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function generateCns() {",
+                      "  for (;;) {",
+                      "    const digits = [7]; let sum = 7 * 15;",
+                      "    for (let i = 1; i < 14; i++) { const d = Math.floor(Math.random() * 10); digits.push(d); sum += d * (15 - i); }",
+                      "    const last = (11 - (sum % 11)) % 11;",
+                      "    if (last < 10) { digits.push(last); return digits.join(''); }",
+                      "  }",
+                      "}",
+                      "pm.collectionVariables.set('cnsAntonio', generateCns());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('CNS mascarado na resposta (RN-21)', () => pm.expect(pm.response.json().cnsMasked).to.match(/^\\*{11}\\d{4}$/));",
+                      "pm.collectionVariables.set('patientAntonioId', pm.response.json().id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patients",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patients"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cns\": \"{{cnsAntonio}}\",\n  \"fullName\": \"Antônio Ferreira Lima\",\n  \"birthDate\": \"1971-08-21\",\n  \"municipalityCode\": \"3550308\",\n  \"phone\": \"+5511999990071\",\n  \"preferredChannel\": \"SMS\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "a0996163-06a9-5213-aff8-16901271f92f",
+              "response": []
+            },
+            {
+              "name": "Paciente Lúcia",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function generateCns() {",
+                      "  for (;;) {",
+                      "    const digits = [7]; let sum = 7 * 15;",
+                      "    for (let i = 1; i < 14; i++) { const d = Math.floor(Math.random() * 10); digits.push(d); sum += d * (15 - i); }",
+                      "    const last = (11 - (sum % 11)) % 11;",
+                      "    if (last < 10) { digits.push(last); return digits.join(''); }",
+                      "  }",
+                      "}",
+                      "pm.collectionVariables.set('cnsLucia', generateCns());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('CNS mascarado na resposta (RN-21)', () => pm.expect(pm.response.json().cnsMasked).to.match(/^\\*{11}\\d{4}$/));",
+                      "pm.collectionVariables.set('patientLuciaId', pm.response.json().id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patients",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patients"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cns\": \"{{cnsLucia}}\",\n  \"fullName\": \"Lúcia Andrade Souza\",\n  \"birthDate\": \"1976-02-09\",\n  \"municipalityCode\": \"3550308\",\n  \"phone\": \"+5511999990072\",\n  \"preferredChannel\": \"SMS\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "ca84e890-0798-554a-8257-e9d59d9389c9",
+              "response": []
+            },
+            {
+              "name": "Encaminhar Antônio (aceita encaixe)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test('protocolo gerado e pendente de regulação', () => { pm.expect(body.protocol).to.match(/^VV-\\d{4}-\\d{7,}$/); pm.expect(body.status).to.eql('PENDING_REGULATION'); });",
+                      "pm.collectionVariables.set('referralAntonioId', body.id);",
+                      "pm.collectionVariables.set('protocolAntonio', body.protocol);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"patientId\": \"{{patientAntonioId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"clinicalJustification\": \"Palpitações e cansaço aos esforços.\",\n  \"cid10\": \"R00.2\",\n  \"acceptsShortNotice\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "83376fef-7218-58f3-83b3-ec36f0569fcc",
+              "response": []
+            },
+            {
+              "name": "Aprovar Antônio com risco GREEN",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('na fila (WAITING)', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals/{{referralAntonioId}}/regulation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals",
+                    "{{referralAntonioId}}",
+                    "regulation"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"APPROVE\",\n  \"riskClass\": \"GREEN\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "c31a3f45-155b-5005-840f-20ec9f435718",
+              "response": []
+            },
+            {
+              "name": "Encaminhar Lúcia (aceita encaixe)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test('protocolo gerado e pendente de regulação', () => { pm.expect(body.protocol).to.match(/^VV-\\d{4}-\\d{7,}$/); pm.expect(body.status).to.eql('PENDING_REGULATION'); });",
+                      "pm.collectionVariables.set('referralLuciaId', body.id);",
+                      "pm.collectionVariables.set('protocolLucia', body.protocol);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"patientId\": \"{{patientLuciaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"clinicalJustification\": \"Hipertensão de difícil controle.\",\n  \"cid10\": \"I10\",\n  \"acceptsShortNotice\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "4809951e-aa4e-5216-92c1-8b19cbc21e2d",
+              "response": []
+            },
+            {
+              "name": "Aprovar Lúcia com risco GREEN",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('na fila (WAITING)', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals/{{referralLuciaId}}/regulation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals",
+                    "{{referralLuciaId}}",
+                    "regulation"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"APPROVE\",\n  \"riskClass\": \"GREEN\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "bc710d34-3ad9-5c04-8ea3-c9a28f67f219",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "P04 Vaga hoje às T−30 min → Antônio aceita",
+          "description": "A vaga começa em 2h30 (entre 2 h e 5 dias ⇒ encaixe, RN-15). Na gravação (T = agora + 3 h) o horário já passou: a falta é aceita (RN-19).",
+          "item": [
+            {
+              "name": "Publicar vaga para daqui a 2h30 (encaixe)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const SP_OFFSET = 3 * 3600 * 1000;",
+                      "const todaySp = () => new Date(Date.now() - SP_OFFSET).toISOString().slice(0, 10);",
+                      "const inMinutes = (min) => { const d = new Date(Date.now() + min * 60000); d.setUTCSeconds(0, 0); return d.toISOString(); };",
+                      "pm.collectionVariables.set('slotStartAntonio', inMinutes(150));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const slot = pm.response.json()[0];",
+                      "pm.test('vaga OPEN_FOR_OFFERS', () => pm.expect(slot.status).to.eql('OPEN_FOR_OFFERS'));",
+                      "pm.collectionVariables.set('slotAntonioId', slot.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slots",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slots"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"unitId\": \"{{unitPoliclinicaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"professionalName\": \"Dra. Helena Prado\",\n  \"slots\": [\n    {\n      \"startAt\": \"{{slotStartAntonio}}\",\n      \"durationMinutes\": 30\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "42f7ffd1-4782-50e4-825e-2a971a38ae46",
+              "response": []
+            },
+            {
+              "name": "Ofertas da vaga (Antônio e Lúcia)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('prepOfferAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const offers = pm.response.json().content;",
+                      "const attempts = Number(pm.variables.get('prepOfferAttempts') || 0);",
+                      "if (!(offers.some(o => o.patientId === pm.variables.get('patientAntonioId') && o.status === 'PENDING') && offers.some(o => o.patientId === pm.variables.get('patientLuciaId') && o.status === 'PENDING')) && attempts < 15) {",
+                      "  pm.collectionVariables.set('prepOfferAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('prepOfferAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "const offerAntonio = offers.find(o => o.patientId === pm.variables.get('patientAntonioId') && o.status === 'PENDING');",
+                      "pm.test('oferta pendente para Antonio', () => pm.expect(offerAntonio).to.not.be.undefined);",
+                      "pm.collectionVariables.set('offerAntonioId', offerAntonio.id);",
+                      "const offerLucia = offers.find(o => o.patientId === pm.variables.get('patientLuciaId') && o.status === 'PENDING');",
+                      "pm.test('oferta pendente para Lucia', () => pm.expect(offerLucia).to.not.be.undefined);",
+                      "pm.collectionVariables.set('offerLuciaId', offerLucia.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slot-offers?slotId={{slotAntonioId}}&size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slot-offers"
+                  ],
+                  "query": [
+                    {
+                      "key": "slotId",
+                      "value": "{{slotAntonioId}}"
+                    },
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "597272ab-46c4-576f-9d8e-2688659dd81a",
+              "response": []
+            },
+            {
+              "name": "Oferta do Antônio na caixa sandbox",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('prepInboxAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const msg = pm.response.json().find(m => m.type === 'SLOT_OFFER' && m.offerId === pm.variables.get('offerAntonioId') && m.status === 'SENT');",
+                      "const attempts = Number(pm.variables.get('prepInboxAttempts') || 0);",
+                      "if (!(msg) && attempts < 15) {",
+                      "  pm.collectionVariables.set('prepInboxAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('prepInboxAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('oferta entregue no canal sandbox', () => pm.expect(msg).to.not.be.undefined);",
+                      "const link = /\\/p\\/([A-Za-z0-9_-]{22})/.exec(msg.body);",
+                      "pm.test('link curto com token de 22 caracteres', () => pm.expect(link).to.not.be.null);",
+                      "pm.test('sem o nome da especialidade (RN-20)', () => pm.expect(msg.body.toLowerCase()).to.not.include('cardio'));",
+                      "pm.collectionVariables.set('offerTokenAntonio', link[1]);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/dev/sandbox/messages?patientId={{patientAntonioId}}&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "dev",
+                    "sandbox",
+                    "messages"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "value": "{{patientAntonioId}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenAdmin}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "3002c197-f1a9-5ed2-b8df-27896e2218aa",
+              "response": []
+            },
+            {
+              "name": "Antônio aceita a oferta",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('agendamento já confirmado (RN-18)', () => { pm.expect(pm.response.json().status).to.eql('CONFIRMED'); pm.expect(pm.response.json().appointmentId).to.be.a('string'); });",
+                      "pm.collectionVariables.set('appointmentAntonioId', pm.response.json().appointmentId);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patient-actions/{{offerTokenAntonio}}/accept-offer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patient-actions",
+                    "{{offerTokenAntonio}}",
+                    "accept-offer"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "e2c0a968-adbd-58ee-8a1c-6ec6a2da4cad",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "P05 Vaga hoje às T+3 h → Lúcia aceita",
+          "description": "Vaga em 6 h: na gravação ela ainda é hoje e o check-in é permitido (RN-19).",
+          "item": [
+            {
+              "name": "Publicar vaga para daqui a 6 h (encaixe)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const SP_OFFSET = 3 * 3600 * 1000;",
+                      "const todaySp = () => new Date(Date.now() - SP_OFFSET).toISOString().slice(0, 10);",
+                      "const inMinutes = (min) => { const d = new Date(Date.now() + min * 60000); d.setUTCSeconds(0, 0); return d.toISOString(); };",
+                      "pm.collectionVariables.set('slotStartLucia', inMinutes(360));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const slot = pm.response.json()[0];",
+                      "pm.test('vaga OPEN_FOR_OFFERS', () => pm.expect(slot.status).to.eql('OPEN_FOR_OFFERS'));",
+                      "pm.collectionVariables.set('slotLuciaId', slot.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slots",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slots"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"unitId\": \"{{unitPoliclinicaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"professionalName\": \"Dra. Helena Prado\",\n  \"slots\": [\n    {\n      \"startAt\": \"{{slotStartLucia}}\",\n      \"durationMinutes\": 30\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "801d092f-2e90-508f-b335-dce9b650358b",
+              "response": []
+            },
+            {
+              "name": "Oferta da vaga (Lúcia)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('prepOfferAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const offers = pm.response.json().content;",
+                      "const attempts = Number(pm.variables.get('prepOfferAttempts') || 0);",
+                      "if (!(offers.some(o => o.patientId === pm.variables.get('patientLuciaId') && o.status === 'PENDING')) && attempts < 15) {",
+                      "  pm.collectionVariables.set('prepOfferAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('prepOfferAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "const offerLucia = offers.find(o => o.patientId === pm.variables.get('patientLuciaId') && o.status === 'PENDING');",
+                      "pm.test('oferta pendente para Lucia', () => pm.expect(offerLucia).to.not.be.undefined);",
+                      "pm.collectionVariables.set('offerLuciaId', offerLucia.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slot-offers?slotId={{slotLuciaId}}&size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slot-offers"
+                  ],
+                  "query": [
+                    {
+                      "key": "slotId",
+                      "value": "{{slotLuciaId}}"
+                    },
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "bb86511b-929d-58c1-8621-f69b6590369b",
+              "response": []
+            },
+            {
+              "name": "Oferta da Lúcia na caixa sandbox",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('prepInboxAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const msg = pm.response.json().find(m => m.type === 'SLOT_OFFER' && m.offerId === pm.variables.get('offerLuciaId') && m.status === 'SENT');",
+                      "const attempts = Number(pm.variables.get('prepInboxAttempts') || 0);",
+                      "if (!(msg) && attempts < 15) {",
+                      "  pm.collectionVariables.set('prepInboxAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('prepInboxAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('oferta entregue no canal sandbox', () => pm.expect(msg).to.not.be.undefined);",
+                      "const link = /\\/p\\/([A-Za-z0-9_-]{22})/.exec(msg.body);",
+                      "pm.test('link curto com token de 22 caracteres', () => pm.expect(link).to.not.be.null);",
+                      "pm.test('sem o nome da especialidade (RN-20)', () => pm.expect(msg.body.toLowerCase()).to.not.include('cardio'));",
+                      "pm.collectionVariables.set('offerTokenLucia', link[1]);",
+                      "const startSp = new Date(new Date(pm.variables.get('slotStartLucia')).getTime() - 3 * 3600 * 1000).toISOString().slice(0, 10);",
+                      "const todaySp = new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);",
+                      "pm.test('a consulta da Lúcia é hoje (check-in só vale no dia — prepare entre 07:00 e 15:00)', () => pm.expect(startSp).to.eql(todaySp));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/dev/sandbox/messages?patientId={{patientLuciaId}}&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "dev",
+                    "sandbox",
+                    "messages"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "value": "{{patientLuciaId}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenAdmin}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "a6b81da5-3fd1-5827-8a86-b9ebd2e4e34c",
+              "response": []
+            },
+            {
+              "name": "Lúcia aceita a oferta",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('agendamento já confirmado (RN-18)', () => { pm.expect(pm.response.json().status).to.eql('CONFIRMED'); pm.expect(pm.response.json().appointmentId).to.be.a('string'); });",
+                      "pm.collectionVariables.set('appointmentLuciaId', pm.response.json().appointmentId);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patient-actions/{{offerTokenLucia}}/accept-offer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patient-actions",
+                    "{{offerTokenLucia}}",
+                    "accept-offer"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "2f9b0152-20a4-519b-beff-a637b666fd48",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "P06 Raimundo — consulta regular confirmada",
+          "description": "Publicada com pelo menos 5 dias ⇒ alocação regular, com link de agendamento. Na gravação faltam menos de 5 dias ⇒ o cancelamento abre a vaga para encaixe (RN-15). Ele não aceita encaixe, então não recebe a oferta da própria vaga.",
+          "item": [
+            {
+              "name": "Paciente Raimundo",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function generateCns() {",
+                      "  for (;;) {",
+                      "    const digits = [7]; let sum = 7 * 15;",
+                      "    for (let i = 1; i < 14; i++) { const d = Math.floor(Math.random() * 10); digits.push(d); sum += d * (15 - i); }",
+                      "    const last = (11 - (sum % 11)) % 11;",
+                      "    if (last < 10) { digits.push(last); return digits.join(''); }",
+                      "  }",
+                      "}",
+                      "pm.collectionVariables.set('cnsRaimundo', generateCns());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('CNS mascarado na resposta (RN-21)', () => pm.expect(pm.response.json().cnsMasked).to.match(/^\\*{11}\\d{4}$/));",
+                      "pm.collectionVariables.set('patientRaimundoId', pm.response.json().id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patients",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patients"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cns\": \"{{cnsRaimundo}}\",\n  \"fullName\": \"Raimundo Nonato Alves\",\n  \"birthDate\": \"1968-11-30\",\n  \"municipalityCode\": \"3550308\",\n  \"phone\": \"+5511999990073\",\n  \"preferredChannel\": \"SMS\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "ca5cef88-24ab-5872-88f5-8d6d9c369534",
+              "response": []
+            },
+            {
+              "name": "Encaminhar Raimundo (não aceita encaixe)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test('protocolo gerado e pendente de regulação', () => { pm.expect(body.protocol).to.match(/^VV-\\d{4}-\\d{7,}$/); pm.expect(body.status).to.eql('PENDING_REGULATION'); });",
+                      "pm.collectionVariables.set('referralRaimundoId', body.id);",
+                      "pm.collectionVariables.set('protocolRaimundo', body.protocol);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"patientId\": \"{{patientRaimundoId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"clinicalJustification\": \"Sopro cardíaco em investigação.\",\n  \"cid10\": \"R01.1\",\n  \"acceptsShortNotice\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "ae9e33e3-e4f0-509f-b1f5-709f3a805d7f",
+              "response": []
+            },
+            {
+              "name": "Aprovar Raimundo com risco YELLOW",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('na fila (WAITING)', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals/{{referralRaimundoId}}/regulation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals",
+                    "{{referralRaimundoId}}",
+                    "regulation"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"APPROVE\",\n  \"riskClass\": \"YELLOW\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "ef273795-c036-5c67-9e8a-fa93dae1b8c9",
+              "response": []
+            },
+            {
+              "name": "Publicar vaga para daqui a 5 dias e 30 min (regular)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const SP_OFFSET = 3 * 3600 * 1000;",
+                      "const todaySp = () => new Date(Date.now() - SP_OFFSET).toISOString().slice(0, 10);",
+                      "const inMinutes = (min) => { const d = new Date(Date.now() + min * 60000); d.setUTCSeconds(0, 0); return d.toISOString(); };",
+                      "pm.collectionVariables.set('slotStartRaimundo', inMinutes(5 * 24 * 60 + 30));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const slot = pm.response.json()[0];",
+                      "pm.test('vaga AVAILABLE', () => pm.expect(slot.status).to.eql('AVAILABLE'));",
+                      "pm.collectionVariables.set('slotRaimundoId', slot.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slots",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slots"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"unitId\": \"{{unitPoliclinicaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"professionalName\": \"Dr. Paulo Mendes\",\n  \"slots\": [\n    {\n      \"startAt\": \"{{slotStartRaimundo}}\",\n      \"durationMinutes\": 30\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "446ede64-2887-530c-9e6c-3eb9d784bb12",
+              "response": []
+            },
+            {
+              "name": "Agendamento do Raimundo (alocação automática)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('prepAppointmentAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const found = pm.response.json().content.find(a => a.referralId === pm.variables.get('referralRaimundoId'));",
+                      "const attempts = Number(pm.variables.get('prepAppointmentAttempts') || 0);",
+                      "if (!(found) && attempts < 15) {",
+                      "  pm.collectionVariables.set('prepAppointmentAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('prepAppointmentAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('agendamento criado pelo motor de alocação', () => pm.expect(found).to.not.be.undefined);",
+                      "pm.test('aguardando confirmação, com prazo até D-3', () => { pm.expect(found.status).to.eql('PENDING_CONFIRMATION'); pm.expect(new Date(found.startAt) - new Date(found.confirmationDeadline)).to.be.above(2 * 24 * 3600 * 1000); });",
+                      "pm.test('origem REGULAR', () => pm.expect(found.origin).to.eql('REGULAR'));",
+                      "pm.collectionVariables.set('appointmentRaimundoId', found.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/appointments?unitId={{unitPoliclinicaId}}&status=PENDING_CONFIRMATION&size=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "appointments"
+                  ],
+                  "query": [
+                    {
+                      "key": "unitId",
+                      "value": "{{unitPoliclinicaId}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING_CONFIRMATION"
+                    },
+                    {
+                      "key": "size",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "391b5b60-19ff-5e86-92f4-550c6cce4fee",
+              "response": []
+            },
+            {
+              "name": "Link do agendamento do Raimundo (sandbox)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('prepInboxAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const msg = pm.response.json().find(m => m.type === 'APPOINTMENT_SCHEDULED' && m.appointmentId === pm.variables.get('appointmentRaimundoId') && m.status === 'SENT');",
+                      "const attempts = Number(pm.variables.get('prepInboxAttempts') || 0);",
+                      "if (!(msg) && attempts < 15) {",
+                      "  pm.collectionVariables.set('prepInboxAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('prepInboxAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('mensagem de agendamento entregue (canal sandbox)', () => pm.expect(msg).to.not.be.undefined);",
+                      "const link = /\\/p\\/([A-Za-z0-9_-]{22})/.exec(msg.body);",
+                      "pm.test('link curto com token de 22 caracteres (RF-25)', () => pm.expect(link).to.not.be.null);",
+                      "pm.test('prazo de confirmação no texto', () => pm.expect(msg.body).to.include('Confirme até'));",
+                      "pm.test('sem o nome da especialidade (RN-20)', () => pm.expect(msg.body.toLowerCase()).to.not.include('cardio'));",
+                      "pm.collectionVariables.set('appointmentTokenRaimundo', link[1]);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/dev/sandbox/messages?patientId={{patientRaimundoId}}&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "dev",
+                    "sandbox",
+                    "messages"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "value": "{{patientRaimundoId}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenAdmin}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "973ebca8-b5f8-585b-8491-5e3227732eb4",
+              "response": []
+            },
+            {
+              "name": "Raimundo confirma presença",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('CONFIRMED', () => pm.expect(pm.response.json().status).to.eql('CONFIRMED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patient-actions/{{appointmentTokenRaimundo}}/confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patient-actions",
+                    "{{appointmentTokenRaimundo}}",
+                    "confirm"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "a5a1135d-343a-5cf7-8f6c-f7711aa0f2ac",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "P07 Encaminhar e aprovar Célia, Jorge e Tereza",
+          "description": "Célia, Jorge e Tereza têm menos de 60 anos e risco GREEN: a Dona Maria (YELLOW, 62 anos) passa na frente deles na gravação.",
+          "item": [
+            {
+              "name": "Paciente Célia",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function generateCns() {",
+                      "  for (;;) {",
+                      "    const digits = [7]; let sum = 7 * 15;",
+                      "    for (let i = 1; i < 14; i++) { const d = Math.floor(Math.random() * 10); digits.push(d); sum += d * (15 - i); }",
+                      "    const last = (11 - (sum % 11)) % 11;",
+                      "    if (last < 10) { digits.push(last); return digits.join(''); }",
+                      "  }",
+                      "}",
+                      "pm.collectionVariables.set('cnsCelia', generateCns());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('CNS mascarado na resposta (RN-21)', () => pm.expect(pm.response.json().cnsMasked).to.match(/^\\*{11}\\d{4}$/));",
+                      "pm.collectionVariables.set('patientCeliaId', pm.response.json().id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patients",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patients"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cns\": \"{{cnsCelia}}\",\n  \"fullName\": \"Célia Regina Moura\",\n  \"birthDate\": \"1979-04-17\",\n  \"municipalityCode\": \"3550308\",\n  \"phone\": \"+5511999990074\",\n  \"preferredChannel\": \"SMS\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "737b02e9-c889-5f7c-9a3f-45f793bd83e2",
+              "response": []
+            },
+            {
+              "name": "Encaminhar Célia (aceita encaixe)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test('protocolo gerado e pendente de regulação', () => { pm.expect(body.protocol).to.match(/^VV-\\d{4}-\\d{7,}$/); pm.expect(body.status).to.eql('PENDING_REGULATION'); });",
+                      "pm.collectionVariables.set('referralCeliaId', body.id);",
+                      "pm.collectionVariables.set('protocolCelia', body.protocol);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"patientId\": \"{{patientCeliaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"clinicalJustification\": \"Dor precordial atípica.\",\n  \"cid10\": \"R07.4\",\n  \"acceptsShortNotice\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "05cc91b4-00c2-545f-8f25-a6d9f2eddc28",
+              "response": []
+            },
+            {
+              "name": "Aprovar Célia com risco GREEN",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('na fila (WAITING)', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals/{{referralCeliaId}}/regulation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals",
+                    "{{referralCeliaId}}",
+                    "regulation"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"APPROVE\",\n  \"riskClass\": \"GREEN\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "b29a4a7c-6003-56e1-86c3-6794d48d9421",
+              "response": []
+            },
+            {
+              "name": "Paciente Jorge",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function generateCns() {",
+                      "  for (;;) {",
+                      "    const digits = [7]; let sum = 7 * 15;",
+                      "    for (let i = 1; i < 14; i++) { const d = Math.floor(Math.random() * 10); digits.push(d); sum += d * (15 - i); }",
+                      "    const last = (11 - (sum % 11)) % 11;",
+                      "    if (last < 10) { digits.push(last); return digits.join(''); }",
+                      "  }",
+                      "}",
+                      "pm.collectionVariables.set('cnsJorge', generateCns());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('CNS mascarado na resposta (RN-21)', () => pm.expect(pm.response.json().cnsMasked).to.match(/^\\*{11}\\d{4}$/));",
+                      "pm.collectionVariables.set('patientJorgeId', pm.response.json().id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patients",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patients"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cns\": \"{{cnsJorge}}\",\n  \"fullName\": \"Jorge Luiz Barbosa\",\n  \"birthDate\": \"1973-06-05\",\n  \"municipalityCode\": \"3550308\",\n  \"phone\": \"+5511999990075\",\n  \"preferredChannel\": \"SMS\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "0101cb5a-92a9-5c1f-bd84-d9f4f56442d4",
+              "response": []
+            },
+            {
+              "name": "Encaminhar Jorge (aceita encaixe)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test('protocolo gerado e pendente de regulação', () => { pm.expect(body.protocol).to.match(/^VV-\\d{4}-\\d{7,}$/); pm.expect(body.status).to.eql('PENDING_REGULATION'); });",
+                      "pm.collectionVariables.set('referralJorgeId', body.id);",
+                      "pm.collectionVariables.set('protocolJorge', body.protocol);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"patientId\": \"{{patientJorgeId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"clinicalJustification\": \"Dispneia leve aos esforços.\",\n  \"cid10\": \"R06.0\",\n  \"acceptsShortNotice\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "b791b1c4-4b01-5507-b981-6ee3a8571a3c",
+              "response": []
+            },
+            {
+              "name": "Aprovar Jorge com risco GREEN",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('na fila (WAITING)', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals/{{referralJorgeId}}/regulation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals",
+                    "{{referralJorgeId}}",
+                    "regulation"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"APPROVE\",\n  \"riskClass\": \"GREEN\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "12760e82-e86e-5567-8139-2898cb96e0de",
+              "response": []
+            },
+            {
+              "name": "Paciente Tereza",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function generateCns() {",
+                      "  for (;;) {",
+                      "    const digits = [7]; let sum = 7 * 15;",
+                      "    for (let i = 1; i < 14; i++) { const d = Math.floor(Math.random() * 10); digits.push(d); sum += d * (15 - i); }",
+                      "    const last = (11 - (sum % 11)) % 11;",
+                      "    if (last < 10) { digits.push(last); return digits.join(''); }",
+                      "  }",
+                      "}",
+                      "pm.collectionVariables.set('cnsTereza', generateCns());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('CNS mascarado na resposta (RN-21)', () => pm.expect(pm.response.json().cnsMasked).to.match(/^\\*{11}\\d{4}$/));",
+                      "pm.collectionVariables.set('patientTerezaId', pm.response.json().id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patients",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patients"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cns\": \"{{cnsTereza}}\",\n  \"fullName\": \"Tereza Cristina Rocha\",\n  \"birthDate\": \"1982-09-12\",\n  \"municipalityCode\": \"3550308\",\n  \"phone\": \"+5511999990076\",\n  \"preferredChannel\": \"SMS\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "c8d13e8f-1a79-56e2-9e9f-79a35eac1cd7",
+              "response": []
+            },
+            {
+              "name": "Encaminhar Tereza (aceita encaixe)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test('protocolo gerado e pendente de regulação', () => { pm.expect(body.protocol).to.match(/^VV-\\d{4}-\\d{7,}$/); pm.expect(body.status).to.eql('PENDING_REGULATION'); });",
+                      "pm.collectionVariables.set('referralTerezaId', body.id);",
+                      "pm.collectionVariables.set('protocolTereza', body.protocol);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"patientId\": \"{{patientTerezaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"clinicalJustification\": \"Extrassístoles ao exame.\",\n  \"cid10\": \"I49.4\",\n  \"acceptsShortNotice\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "9fefd019-ec66-5c7d-b377-9c5158a46513",
+              "response": []
+            },
+            {
+              "name": "Aprovar Tereza com risco GREEN",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('na fila (WAITING)', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals/{{referralTerezaId}}/regulation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals",
+                    "{{referralTerezaId}}",
+                    "regulation"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"APPROVE\",\n  \"riskClass\": \"GREEN\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "150c5609-adbd-567d-87d3-69811971e688",
+              "response": []
+            },
+            {
+              "name": "Guardar data de nascimento da Célia",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.collectionVariables.set('birthDateCelia', pm.response.json().birthDate);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patients/{{patientCeliaId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patients",
+                    "{{patientCeliaId}}"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "9e386be0-1dfe-56bc-842f-999e82e8e078",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "P08 Conferências antes de gravar (T−10 min)",
+          "description": "Rode logo antes de gravar: renova os tokens (valem 60 min) e confere a massa.",
+          "item": [
+            {
+              "name": "Login ADMIN",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel ADMIN', () => pm.expect(pm.response.json().user.role).to.eql('ADMIN'));",
+                      "pm.collectionVariables.set('tokenAdmin', pm.response.json().accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "d88fd690-de10-558f-9689-e4ee7e8ef685",
+              "response": []
+            },
+            {
+              "name": "Login REQUESTER (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel REQUESTER', () => pm.expect(pm.response.json().user.role).to.eql('REQUESTER'));",
+                      "pm.collectionVariables.set('tokenRequester', pm.response.json().accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"requester@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "676abdb8-8a6b-5006-9ef2-02df09030e43",
+              "response": []
+            },
+            {
+              "name": "Login REGULATOR (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel REGULATOR', () => pm.expect(pm.response.json().user.role).to.eql('REGULATOR'));",
+                      "pm.collectionVariables.set('tokenRegulator', pm.response.json().accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"regulator@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "1d5afa20-becd-5c58-8e18-7eae6c02c179",
+              "response": []
+            },
+            {
+              "name": "Login SCHEDULER (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel SCHEDULER', () => pm.expect(pm.response.json().user.role).to.eql('SCHEDULER'));",
+                      "pm.collectionVariables.set('tokenScheduler', pm.response.json().accessToken);",
+                      "pm.collectionVariables.set('unitPoliclinicaId', pm.response.json().user.healthUnitId);",
+                      "pm.test('agendador vinculado a uma policlínica', () => pm.expect(pm.response.json().user.healthUnitId).to.be.a('string'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"scheduler@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "ce77eb6f-bdd0-5094-a6ac-eeede1119000",
+              "response": []
+            },
+            {
+              "name": "Login MANAGER (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel MANAGER', () => pm.expect(pm.response.json().user.role).to.eql('MANAGER'));",
+                      "pm.collectionVariables.set('tokenManager', pm.response.json().accessToken);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"manager@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "dd2fbe9c-4848-531e-b749-845f92865fc2",
+              "response": []
+            },
+            {
+              "name": "Health check",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/actuator/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "actuator",
+                    "health"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "89c6ab46-fb4b-5dca-8f95-bfa87df55f83",
+              "response": []
+            },
+            {
+              "name": "Fila: Célia, Jorge e Tereza",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "const ids = pm.response.json().content.map(i => i.referralId);",
+                      "pm.test('exatamente Célia, Jorge e Tereza, nessa ordem', () => pm.expect(ids).to.eql(['Celia','Jorge','Tereza'].map(k => pm.variables.get('referral' + k + 'Id'))));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/queues/{{specialtyCardioId}}?size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "queues",
+                    "{{specialtyCardioId}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "05af99a4-b1d0-5aa6-907a-6dffede15610",
+              "response": []
+            },
+            {
+              "name": "Nenhuma vaga futura livre",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('nowIso', new Date().toISOString());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('nenhuma vaga AVAILABLE futura (o job de 5 min alocaria Célia, Jorge ou Tereza)', () => pm.expect(pm.response.json().content).to.have.lengthOf(0));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slots?specialtyId={{specialtyCardioId}}&from={{nowIso}}&status=AVAILABLE&size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slots"
+                  ],
+                  "query": [
+                    {
+                      "key": "specialtyId",
+                      "value": "{{specialtyCardioId}}"
+                    },
+                    {
+                      "key": "from",
+                      "value": "{{nowIso}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "AVAILABLE"
+                    },
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "e9401809-841f-5c41-90d3-c21f7d0fc6ef",
+              "response": []
+            },
+            {
+              "name": "Antônio e Lúcia confirmados hoje",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('todaySp', new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "const ids = pm.response.json().content.map(a => a.id);",
+                      "pm.test('Antônio e Lúcia CONFIRMED hoje', () => pm.expect(ids).to.include.members([pm.variables.get('appointmentAntonioId'), pm.variables.get('appointmentLuciaId')]));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/appointments?unitId={{unitPoliclinicaId}}&date={{todaySp}}&status=CONFIRMED&size=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "appointments"
+                  ],
+                  "query": [
+                    {
+                      "key": "unitId",
+                      "value": "{{unitPoliclinicaId}}"
+                    },
+                    {
+                      "key": "date",
+                      "value": "{{todaySp}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "CONFIRMED"
+                    },
+                    {
+                      "key": "size",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "7a41b076-09f8-5c19-8dce-6b41be3c9e4f",
+              "response": []
+            },
+            {
+              "name": "Recalcular snapshot da fila (ADMIN)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/queues/snapshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "queues",
+                    "snapshot"
+                  ]
+                },
+                "description": "Garante que a posição pública da Célia já está no snapshot (o job roda a cada 5 min).",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenAdmin}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "782d13d5-e462-527d-85e9-3117be0b3381",
+              "response": []
+            },
+            {
+              "name": "Posição pública da Célia",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Célia na fila', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/public/queue-position",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "public",
+                    "queue-position"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"protocol\": \"{{protocolCelia}}\",\n  \"birthDate\": \"{{birthDateCelia}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "0b183a11-2cf5-597e-9f69-6a488d56feea",
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Gravação",
+      "description": "Requests do vídeo, na ordem dos blocos 0 a 12 do roteiro. Depende da massa da pasta Preparação. Os blocos 9, 10 e 11 consomem a massa: para repetir, prepare de novo.",
+      "item": [
+        {
+          "name": "00 - Plataforma",
+          "description": "",
+          "item": [
+            {
+              "name": "Health check",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/actuator/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "actuator",
+                    "health"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "cb5f8e64-26b4-5151-bc91-4d72fa0e5d04",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "01 - Autenticação e usuários",
+          "description": "",
+          "item": [
+            {
+              "name": "Login REQUESTER (demo)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('papel REQUESTER', () => pm.expect(pm.response.json().user.role).to.eql('REQUESTER'));",
+                      "pm.collectionVariables.set('tokenRequester', pm.response.json().accessToken);",
+                      "pm.test('token Bearer de 60 min', () => { pm.expect(pm.response.json().tokenType).to.eql('Bearer'); pm.expect(pm.response.json().expiresIn).to.eql(3600); });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"requester@vagaviva.local\",\n  \"password\": \"{{demoPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "32090204-1517-58a2-9c10-80815e95d65b",
+              "response": []
+            },
+            {
+              "name": "Rota de ADMIN com token REGULATOR → 403",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 403', () => pm.response.to.have.status(403));",
+                      "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                      "pm.test('code ACCESS_DENIED', () => pm.expect(pm.response.json().code).to.eql('ACCESS_DENIED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "bfc832a9-042e-57e0-96a1-84c440b26ef6",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "02 - Cadastros",
+          "description": "",
+          "item": [
+            {
+              "name": "Cadastrar paciente",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "function generateCns() {",
+                      "  for (;;) {",
+                      "    const digits = [7]; let sum = 7 * 15;",
+                      "    for (let i = 1; i < 14; i++) { const d = Math.floor(Math.random() * 10); digits.push(d); sum += d * (15 - i); }",
+                      "    const last = (11 - (sum % 11)) % 11;",
+                      "    if (last < 10) { digits.push(last); return digits.join(''); }",
+                      "  }",
+                      "}",
+                      "function generateCpf() {",
+                      "  const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));",
+                      "  if (new Set(n).size === 1) n[0] = (n[0] + 1) % 10;",
+                      "  const dv = (arr) => { const s = arr.reduce((acc, d, i) => acc + d * (arr.length + 1 - i), 0); const r = (s * 10) % 11; return r === 10 ? 0 : r; };",
+                      "  n.push(dv(n)); n.push(dv(n));",
+                      "  return n.join('');",
+                      "}",
+                      "pm.collectionVariables.set('cnsMaria', generateCns());",
+                      "pm.collectionVariables.set('cpfMaria', generateCpf());",
+                      "// 62 anos: grupo prioritário (60+)",
+                      "const b = new Date(); b.setUTCFullYear(b.getUTCFullYear() - 62); b.setUTCMonth(b.getUTCMonth() - 2);",
+                      "pm.collectionVariables.set('birthDateMaria', b.toISOString().slice(0, 10));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const p = pm.response.json();",
+                      "pm.test('CNS e CPF mascarados (RN-21)', () => { pm.expect(p.cnsMasked).to.match(/^\\*{11}\\d{4}$/); pm.expect(p.cpfMasked).to.not.include(pm.variables.get('cpfMaria')); });",
+                      "pm.collectionVariables.set('patientMariaId', p.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patients",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patients"
+                  ]
+                },
+                "description": "Dona Maria, 62 anos. CNS e CPF válidos gerados no pre-request.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cns\": \"{{cnsMaria}}\",\n  \"cpf\": \"{{cpfMaria}}\",\n  \"fullName\": \"Maria das Graças Oliveira\",\n  \"birthDate\": \"{{birthDateMaria}}\",\n  \"municipalityCode\": \"3550308\",\n  \"phone\": \"+5511999990062\",\n  \"preferredChannel\": \"SMS\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "3b1920ac-6e02-513f-a632-dfa035b32ede",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "03 - Regulação e fila",
+          "description": "",
+          "item": [
+            {
+              "name": "Criar encaminhamento",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "const body = pm.response.json();",
+                      "pm.test('protocolo gerado e pendente de regulação', () => { pm.expect(body.protocol).to.match(/^VV-\\d{4}-\\d{7,}$/); pm.expect(body.status).to.eql('PENDING_REGULATION'); });",
+                      "pm.collectionVariables.set('referralMariaId', body.id);",
+                      "pm.collectionVariables.set('protocolMaria', body.protocol);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"patientId\": \"{{patientMariaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"clinicalJustification\": \"Dor torácica aos esforços há 3 meses.\",\n  \"cid10\": \"I20.9\",\n  \"acceptsShortNotice\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "cef42683-f52d-5580-8127-05fecff3383f",
+              "response": []
+            },
+            {
+              "name": "Encaminhamento duplicado → 409",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 409', () => pm.response.to.have.status(409));",
+                      "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                      "pm.test('code REFERRAL_DUPLICATED', () => pm.expect(pm.response.json().code).to.eql('REFERRAL_DUPLICATED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"patientId\": \"{{patientMariaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"clinicalJustification\": \"Repetido.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRequester}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "481f7cd7-2156-5f91-ba58-e69b6fc94dc6",
+              "response": []
+            },
+            {
+              "name": "Regulador aprova com risco",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('na fila (WAITING)', () => pm.expect(pm.response.json().status).to.eql('WAITING'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/referrals/{{referralMariaId}}/regulation",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "referrals",
+                    "{{referralMariaId}}",
+                    "regulation"
+                  ]
+                },
+                "description": "",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"decision\": \"APPROVE\",\n  \"riskClass\": \"YELLOW\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "3808aa2b-eeb2-5e11-8195-658e97ab1be7",
+              "response": []
+            },
+            {
+              "name": "Fila da especialidade (ordem PNR-SUS)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "const items = pm.response.json().content;",
+                      "pm.test('Dona Maria (YELLOW, 60+) na frente', () => { pm.expect(items[0].referralId).to.eql(pm.variables.get('referralMariaId')); pm.expect(items[0].riskClass).to.eql('YELLOW'); pm.expect(items[0].priorityGroup).to.eql(true); });",
+                      "pm.test('CNS mascarado', () => items.forEach(i => pm.expect(i.patientCnsMasked).to.match(/^\\*{11}\\d{4}$/)));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/queues/{{specialtyCardioId}}?size=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "queues",
+                    "{{specialtyCardioId}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "size",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenRegulator}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "9464624d-ef43-5f99-9a26-aab4fb46df44",
+              "response": []
+            },
+            {
+              "name": "Posição pública na fila",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "const body = pm.response.json();",
+                      "pm.test('posição, total e horário do snapshot', () => { pm.expect(body.position).to.be.a('number'); pm.expect(body.totalInQueue).to.be.a('number'); pm.expect(body.snapshotAt).to.be.a('string'); });",
+                      "pm.test('sem nome nem CNS', () => pm.expect(pm.response.text()).to.not.include('Célia'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/public/queue-position",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "public",
+                    "queue-position"
+                  ]
+                },
+                "description": "Sem login. Protocolo e data de nascimento no corpo, nunca na URL (RN-22).",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"protocol\": \"{{protocolCelia}}\",\n  \"birthDate\": \"{{birthDateCelia}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "53635e03-5b67-5e89-b13f-bd819bf09f8d",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "04 - Agenda e alocação",
+          "description": "",
+          "item": [
+            {
+              "name": "Publicar vagas (≥ 7 dias)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// D+7 às 09:00 (Brasília)",
+                      "const sp = new Date(Date.now() - 3 * 3600 * 1000);",
+                      "const d = new Date(Date.UTC(sp.getUTCFullYear(), sp.getUTCMonth(), sp.getUTCDate() + 7, 12, 0, 0));",
+                      "pm.collectionVariables.set('slotStartMaria', d.toISOString());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('vaga AVAILABLE (≥ 5 dias vai para a fila regular)', () => pm.expect(pm.response.json()[0].status).to.eql('AVAILABLE'));",
+                      "pm.collectionVariables.set('slotMariaId', pm.response.json()[0].id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slots",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slots"
+                  ]
+                },
+                "description": "Uma vaga em D+7 às 09:00. Ninguém clica em agendar: a publicação dispara o motor de alocação.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"unitId\": \"{{unitPoliclinicaId}}\",\n  \"specialtyId\": \"{{specialtyCardioId}}\",\n  \"professionalName\": \"Dra. Helena Prado\",\n  \"slots\": [\n    {\n      \"startAt\": \"{{slotStartMaria}}\",\n      \"durationMinutes\": 30\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "e3a1355a-9a78-5624-8ada-aff6a01fc0b1",
+              "response": []
+            },
+            {
+              "name": "Agendamento criado (PENDING_CONFIRMATION)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('appointmentAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const found = pm.response.json().content.find(a => a.referralId === pm.variables.get('referralMariaId'));",
+                      "const attempts = Number(pm.variables.get('appointmentAttempts') || 0);",
+                      "if (!(found) && attempts < 15) {",
+                      "  pm.collectionVariables.set('appointmentAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('appointmentAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('agendamento criado pelo motor de alocação', () => pm.expect(found).to.not.be.undefined);",
+                      "pm.test('aguardando confirmação, com prazo até D-3', () => { pm.expect(found.status).to.eql('PENDING_CONFIRMATION'); pm.expect(new Date(found.startAt) - new Date(found.confirmationDeadline)).to.be.above(2 * 24 * 3600 * 1000); });",
+                      "pm.test('origem REGULAR', () => pm.expect(found.origin).to.eql('REGULAR'));",
+                      "pm.collectionVariables.set('appointmentMariaId', found.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/appointments?unitId={{unitPoliclinicaId}}&status=PENDING_CONFIRMATION&size=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "appointments"
+                  ],
+                  "query": [
+                    {
+                      "key": "unitId",
+                      "value": "{{unitPoliclinicaId}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "PENDING_CONFIRMATION"
+                    },
+                    {
+                      "key": "size",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "540b38c3-efac-58d9-8e9f-6c50a2dca6ac",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "05 - Confirmação ativa",
+          "description": "",
+          "item": [
+            {
+              "name": "Link do agendamento na caixa sandbox",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('inboxAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const msg = pm.response.json().find(m => m.type === 'APPOINTMENT_SCHEDULED' && m.appointmentId === pm.variables.get('appointmentMariaId') && m.status === 'SENT');",
+                      "const attempts = Number(pm.variables.get('inboxAttempts') || 0);",
+                      "if (!(msg) && attempts < 15) {",
+                      "  pm.collectionVariables.set('inboxAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('inboxAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('mensagem de agendamento entregue (canal sandbox)', () => pm.expect(msg).to.not.be.undefined);",
+                      "const link = /\\/p\\/([A-Za-z0-9_-]{22})/.exec(msg.body);",
+                      "pm.test('link curto com token de 22 caracteres (RF-25)', () => pm.expect(link).to.not.be.null);",
+                      "pm.test('prazo de confirmação no texto', () => pm.expect(msg.body).to.include('Confirme até'));",
+                      "pm.test('sem o nome da especialidade (RN-20)', () => pm.expect(msg.body.toLowerCase()).to.not.include('cardio'));",
+                      "pm.collectionVariables.set('appointmentToken', link[1]);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/dev/sandbox/messages?patientId={{patientMariaId}}&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "dev",
+                    "sandbox",
+                    "messages"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "value": "{{patientMariaId}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenAdmin}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "5aee2b52-0127-5a75-8be8-6e5b3c64af28",
+              "response": []
+            },
+            {
+              "name": "Ver o agendamento pelo link (sem login)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "const v = pm.response.json();",
+                      "pm.test('rótulo genérico, nunca a especialidade (RN-20)', () => pm.expect(v.label).to.eql('consulta'));",
+                      "pm.test('só o primeiro nome', () => pm.expect(v.firstName).to.eql('Maria'));",
+                      "pm.test('aguardando confirmação, com as 3 ações', () => { pm.expect(v.status).to.eql('PENDING_CONFIRMATION'); pm.expect(v.allowedActions).to.have.members(['CONFIRM','CANCEL','WITHDRAW']); });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patient-actions/{{appointmentToken}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patient-actions",
+                    "{{appointmentToken}}"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "082d6d34-7e5d-519f-ba09-263c0abe6198",
+              "response": []
+            },
+            {
+              "name": "Confirmar presença",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('CONFIRMED', () => pm.expect(pm.response.json().status).to.eql('CONFIRMED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patient-actions/{{appointmentToken}}/confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patient-actions",
+                    "{{appointmentToken}}",
+                    "confirm"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "1bb9c979-0c1c-5426-bc8a-e8d3ad01209c",
+              "response": []
+            },
+            {
+              "name": "Cenário 2 · \"não posso ir\" pelo link",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('CANCELLED_BY_PATIENT e de volta à fila', () => { pm.expect(pm.response.json().status).to.eql('CANCELLED_BY_PATIENT'); pm.expect(pm.response.json().backToQueue).to.eql(true); });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patient-actions/{{appointmentTokenRaimundo}}/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patient-actions",
+                    "{{appointmentTokenRaimundo}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Seu Raimundo avisa que não pode ir. Faltam menos de 5 dias ⇒ a vaga vira encaixe (RN-15).",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "389911a5-44eb-5a28-8392-d40f62ee5a21",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "06 - Reaproveitamento de vagas",
+          "description": "",
+          "item": [
+            {
+              "name": "Ofertas da rodada 1 (lote de 3)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('offerAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const offers = pm.response.json().content.filter(o => o.round === 1 && o.status === 'PENDING');",
+                      "const attempts = Number(pm.variables.get('offerAttempts') || 0);",
+                      "if (!(offers.length === 3) && attempts < 15) {",
+                      "  pm.collectionVariables.set('offerAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('offerAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('3 ofertas pendentes na rodada 1 (RN-16)', () => pm.expect(offers).to.have.lengthOf(3));",
+                      "const byPatient = k => offers.find(o => o.patientId === pm.variables.get('patient' + k + 'Id'));",
+                      "pm.test('para Célia, Jorge e Tereza (os 3 primeiros que aceitam encaixe)', () => ['Celia','Jorge','Tereza'].forEach(k => pm.expect(byPatient(k)).to.not.be.undefined));",
+                      "pm.test('prazo de resposta de até 4 h (RN-17)', () => offers.forEach(o => pm.expect(new Date(o.expiresAt) - Date.now()).to.be.at.most(4 * 3600 * 1000 + 60000)));",
+                      "pm.collectionVariables.set('offerCeliaId', byPatient('Celia').id);",
+                      "pm.collectionVariables.set('offerJorgeId', byPatient('Jorge').id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/slot-offers?slotId={{slotRaimundoId}}&size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "slot-offers"
+                  ],
+                  "query": [
+                    {
+                      "key": "slotId",
+                      "value": "{{slotRaimundoId}}"
+                    },
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "3e05e036-46e4-5a68-8439-92967aa67df8",
+              "response": []
+            },
+            {
+              "name": "Caixa sandbox — ofertas da rodada (extrai tokens)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('inboxAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const msg = pm.response.json().find(m => m.type === 'SLOT_OFFER' && m.offerId === pm.variables.get('offerCeliaId') && m.status === 'SENT');",
+                      "const attempts = Number(pm.variables.get('inboxAttempts') || 0);",
+                      "if (!(msg) && attempts < 15) {",
+                      "  pm.collectionVariables.set('inboxAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('inboxAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('oferta entregue no canal sandbox', () => pm.expect(msg).to.not.be.undefined);",
+                      "const link = /\\/p\\/([A-Za-z0-9_-]{22})/.exec(msg.body);",
+                      "pm.test('link curto com token de 22 caracteres', () => pm.expect(link).to.not.be.null);",
+                      "pm.test('sem o nome da especialidade (RN-20)', () => pm.expect(msg.body.toLowerCase()).to.not.include('cardio'));",
+                      "pm.collectionVariables.set('offerTokenCelia', link[1]);",
+                      "// token do Jorge, para o segundo aceite (mesma rodada)",
+                      "pm.sendRequest({ url: pm.variables.replaceIn('{{baseUrl}}/api/v1/dev/sandbox/messages?patientId={{patientJorgeId}}&limit=20'),",
+                      "  method: 'GET', header: { Authorization: 'Bearer ' + pm.variables.get('tokenAdmin'), Accept: 'application/json' } }, (err, res) => {",
+                      "  const m = !err && res.json().find(x => x.type === 'SLOT_OFFER' && x.offerId === pm.variables.get('offerJorgeId'));",
+                      "  const l = m && /\\/p\\/([A-Za-z0-9_-]{22})/.exec(m.body);",
+                      "  pm.test('oferta do Jorge também entregue', () => pm.expect(l).to.not.be.null);",
+                      "  if (l) pm.collectionVariables.set('offerTokenJorge', l[1]);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/dev/sandbox/messages?patientId={{patientCeliaId}}&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "dev",
+                    "sandbox",
+                    "messages"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "value": "{{patientCeliaId}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenAdmin}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "f84b4b65-5cc8-5cbc-b0a8-21abc2a2e3eb",
+              "response": []
+            },
+            {
+              "name": "Aceitar a oferta (primeiro paciente)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('agendamento já confirmado (RN-18)', () => { pm.expect(pm.response.json().status).to.eql('CONFIRMED'); pm.expect(pm.response.json().appointmentId).to.be.a('string'); });",
+                      "pm.collectionVariables.set('appointmentCeliaId', pm.response.json().appointmentId);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patient-actions/{{offerTokenCelia}}/accept-offer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patient-actions",
+                    "{{offerTokenCelia}}",
+                    "accept-offer"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "04752f2a-f1a1-5d93-9629-497fb07582bd",
+              "response": []
+            },
+            {
+              "name": "Aceitar a oferta (segundo paciente) → 409",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 409', () => pm.response.to.have.status(409));",
+                      "pm.test('problem+json (RFC 9457)', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json'));",
+                      "pm.test('code SLOT_ALREADY_FILLED', () => pm.expect(pm.response.json().code).to.eql('SLOT_ALREADY_FILLED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/patient-actions/{{offerTokenJorge}}/accept-offer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "patient-actions",
+                    "{{offerTokenJorge}}",
+                    "accept-offer"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "id": "9e6609f9-f602-57df-854a-9c401da78774",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "04 - Agenda e alocação (no dia)",
+          "description": "",
+          "item": [
+            {
+              "name": "Check-in do paciente",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('ATTENDED', () => pm.expect(pm.response.json().status).to.eql('ATTENDED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentLuciaId}}/check-in",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "appointments",
+                    "{{appointmentLuciaId}}",
+                    "check-in"
+                  ]
+                },
+                "description": "Dona Lúcia (consulta hoje, preparada em P05).",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "e53b3cbd-83cb-58ea-9a3e-283cd22da501",
+              "response": []
+            },
+            {
+              "name": "Registrar falta",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('NO_SHOW', () => pm.expect(pm.response.json().status).to.eql('NO_SHOW'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentAntonioId}}/no-show",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "appointments",
+                    "{{appointmentAntonioId}}",
+                    "no-show"
+                  ]
+                },
+                "description": "Seu Antônio (consulta de hoje, horário já passou — P04). O encaminhamento volta para o regulador (RN-14).",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenScheduler}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "c2372a26-efe6-5224-8940-6b49d1766756",
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "07 - Indicadores",
+          "description": "",
+          "item": [
+            {
+              "name": "Indicadores do período (MANAGER)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('todaySp', new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10));",
+                      "// espera entre tentativas (alocação, ofertas e mensagens rodam depois do commit, em outra thread)",
+                      "if (Number(pm.variables.get('insightsAttempts') || 0) > 0) { setTimeout(() => {}, 2000); }"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const r = pm.response.json();",
+                      "const attempts = Number(pm.variables.get('insightsAttempts') || 0);",
+                      "if (!(r.slots && r.slots.reallocated >= 1 && r.appointments.noShows >= 1 && r.appointments.attended >= 1) && attempts < 10) {",
+                      "  pm.collectionVariables.set('insightsAttempts', String(attempts + 1));",
+                      "  postman.setNextRequest(pm.info.requestName);",
+                      "  return;",
+                      "}",
+                      "pm.collectionVariables.set('insightsAttempts', '0');",
+                      "pm.test('status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('vaga do Raimundo liberada e reaproveitada', () => { pm.expect(r.slots.released).to.be.at.least(1); pm.expect(r.slots.reallocated).to.be.at.least(1); });",
+                      "pm.test('check-in e falta de hoje', () => { pm.expect(r.appointments.attended).to.be.at.least(1); pm.expect(r.appointments.noShows).to.be.at.least(1); });",
+                      "pm.test('fila por classe de risco', () => pm.expect(Object.keys(r.queueSizeByRisk)).to.have.members(['RED','YELLOW','GREEN','BLUE']));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/insights/indicators?from={{todaySp}}&to={{todaySp}}&specialtyId={{specialtyCardioId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "insights",
+                    "indicators"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "{{todaySp}}"
+                    },
+                    {
+                      "key": "to",
+                      "value": "{{todaySp}}"
+                    },
+                    {
+                      "key": "specialtyId",
+                      "value": "{{specialtyCardioId}}"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{tokenManager}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": "4b05c4ab-b70c-576e-b9d2-753a2c5b8244",
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "appointmentAntonioId",
+      "value": ""
+    },
+    {
+      "key": "appointmentAttempts",
+      "value": ""
+    },
+    {
+      "key": "appointmentCeliaId",
+      "value": ""
+    },
+    {
+      "key": "appointmentLuciaId",
+      "value": ""
+    },
+    {
+      "key": "appointmentMariaId",
+      "value": ""
+    },
+    {
+      "key": "appointmentRaimundoId",
+      "value": ""
+    },
+    {
+      "key": "appointmentToken",
+      "value": ""
+    },
+    {
+      "key": "appointmentTokenRaimundo",
+      "value": ""
+    },
+    {
+      "key": "birthDateCelia",
+      "value": ""
+    },
+    {
+      "key": "birthDateMaria",
+      "value": ""
+    },
+    {
+      "key": "cnsAntonio",
+      "value": ""
+    },
+    {
+      "key": "cnsCelia",
+      "value": ""
+    },
+    {
+      "key": "cnsJorge",
+      "value": ""
+    },
+    {
+      "key": "cnsLucia",
+      "value": ""
+    },
+    {
+      "key": "cnsMaria",
+      "value": ""
+    },
+    {
+      "key": "cnsRaimundo",
+      "value": ""
+    },
+    {
+      "key": "cnsTereza",
+      "value": ""
+    },
+    {
+      "key": "cpfMaria",
+      "value": ""
+    },
+    {
+      "key": "inboxAttempts",
+      "value": ""
+    },
+    {
+      "key": "insightsAttempts",
+      "value": ""
+    },
+    {
+      "key": "nowIso",
+      "value": ""
+    },
+    {
+      "key": "offerAntonioId",
+      "value": ""
+    },
+    {
+      "key": "offerAttempts",
+      "value": ""
+    },
+    {
+      "key": "offerCeliaId",
+      "value": ""
+    },
+    {
+      "key": "offerJorgeId",
+      "value": ""
+    },
+    {
+      "key": "offerLuciaId",
+      "value": ""
+    },
+    {
+      "key": "offerTokenAntonio",
+      "value": ""
+    },
+    {
+      "key": "offerTokenCelia",
+      "value": ""
+    },
+    {
+      "key": "offerTokenJorge",
+      "value": ""
+    },
+    {
+      "key": "offerTokenLucia",
+      "value": ""
+    },
+    {
+      "key": "patientAntonioId",
+      "value": ""
+    },
+    {
+      "key": "patientCeliaId",
+      "value": ""
+    },
+    {
+      "key": "patientJorgeId",
+      "value": ""
+    },
+    {
+      "key": "patientLuciaId",
+      "value": ""
+    },
+    {
+      "key": "patientMariaId",
+      "value": ""
+    },
+    {
+      "key": "patientRaimundoId",
+      "value": ""
+    },
+    {
+      "key": "patientTerezaId",
+      "value": ""
+    },
+    {
+      "key": "prepAppointmentAttempts",
+      "value": ""
+    },
+    {
+      "key": "prepInboxAttempts",
+      "value": ""
+    },
+    {
+      "key": "prepOfferAttempts",
+      "value": ""
+    },
+    {
+      "key": "protocolAntonio",
+      "value": ""
+    },
+    {
+      "key": "protocolCelia",
+      "value": ""
+    },
+    {
+      "key": "protocolJorge",
+      "value": ""
+    },
+    {
+      "key": "protocolLucia",
+      "value": ""
+    },
+    {
+      "key": "protocolMaria",
+      "value": ""
+    },
+    {
+      "key": "protocolRaimundo",
+      "value": ""
+    },
+    {
+      "key": "protocolTereza",
+      "value": ""
+    },
+    {
+      "key": "referralAntonioId",
+      "value": ""
+    },
+    {
+      "key": "referralCeliaId",
+      "value": ""
+    },
+    {
+      "key": "referralJorgeId",
+      "value": ""
+    },
+    {
+      "key": "referralLuciaId",
+      "value": ""
+    },
+    {
+      "key": "referralMariaId",
+      "value": ""
+    },
+    {
+      "key": "referralRaimundoId",
+      "value": ""
+    },
+    {
+      "key": "referralTerezaId",
+      "value": ""
+    },
+    {
+      "key": "slotAntonioId",
+      "value": ""
+    },
+    {
+      "key": "slotLuciaId",
+      "value": ""
+    },
+    {
+      "key": "slotMariaId",
+      "value": ""
+    },
+    {
+      "key": "slotRaimundoId",
+      "value": ""
+    },
+    {
+      "key": "slotStartAntonio",
+      "value": ""
+    },
+    {
+      "key": "slotStartLucia",
+      "value": ""
+    },
+    {
+      "key": "slotStartMaria",
+      "value": ""
+    },
+    {
+      "key": "slotStartRaimundo",
+      "value": ""
+    },
+    {
+      "key": "specialtyCardioId",
+      "value": ""
+    },
+    {
+      "key": "todaySp",
+      "value": ""
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "tokenManager",
+      "value": ""
+    },
+    {
+      "key": "tokenRegulator",
+      "value": ""
+    },
+    {
+      "key": "tokenRequester",
+      "value": ""
+    },
+    {
+      "key": "tokenScheduler",
+      "value": ""
+    },
+    {
+      "key": "unitPoliclinicaId",
+      "value": ""
+    }
+  ]
+}
