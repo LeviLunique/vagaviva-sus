@@ -1,14 +1,14 @@
 {
   "info": {
     "_postman_id": "260382e2-56d4-52d9-beb8-ea68099dc2c7",
-    "name": "VagaViva API — gravação",
-    "description": "Coleção do vídeo de demonstração do MVP: conta a história da Dona Maria (encaminhada, regulada, agendada e confirmada) e o reaproveitamento da vaga que o Seu Raimundo cancelou (encaixe em cascata, primeiro aceite vence).\n\n1. Selecione o ambiente `VagaViva - demo` (ou `VagaViva - local` para ensaiar) e preencha `adminPassword` e `demoPassword` localmente (tipo *secret*; nunca versione).\n2. Rode a pasta **Preparação** cerca de 3 h antes de gravar (entre 07:00 e 15:00, horário de Brasília).\n3. Logo antes de gravar, rode `Preparação › P08`.\n4. Grave executando os requests da pasta **Gravação** na ordem.\n\nPelo Newman: `POSTMAN_COLLECTION=postman/vagaviva-demo-video.postman_collection.json ./scripts/run-postman.sh --folder Preparação` (e, depois, `--folder Gravação`).\n\nTokens, ids e links gerados são variáveis da **coleção**: não crie variáveis com os mesmos nomes no ambiente (as de ambiente têm precedência). Todos os pacientes são fictícios.",
+    "name": "VagaViva API — Demonstração",
+    "description": "Coleção do vídeo de demonstração do MVP: conta a história da Dona Maria (encaminhada, regulada, agendada e confirmada) e o reaproveitamento da vaga que o Seu Raimundo cancelou (encaixe em cascata, primeiro aceite vence).\n\n1. Selecione o ambiente `VagaViva - demo` (ou `VagaViva - local` para ensaiar) e preencha `adminPassword` e `demoPassword` localmente (tipo *secret*; nunca versione).\n2. Rode a pasta **Preparação** pelo menos 30 min antes de gravar, no mesmo dia e até 17:30 (horário de Brasília).\n3. Logo antes de gravar, rode `Preparação › P08`.\n4. Grave executando os requests da pasta **Gravação** na ordem.\n\nPelo Newman: `POSTMAN_COLLECTION=postman/vagaviva-demo-video.postman_collection.json ./scripts/run-postman.sh --folder Preparação` (e, depois, `--folder Gravação`).\n\nTokens, ids e links gerados são variáveis da **coleção**: não crie variáveis com os mesmos nomes no ambiente (as de ambiente têm precedência). Todos os pacientes são fictícios.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "Preparação",
-      "description": "Monta a massa do vídeo (roteiro, seção 3.3). Rode a pasta inteira de uma vez (Run folder), **cerca de 3 h antes** da gravação e entre 07:00 e 15:00 (horário de Brasília): a vaga do Antônio já terá passado e a da Lúcia ainda será hoje. Fica recolhida no vídeo. Os blocos 9, 10 e 11 consomem a massa.",
+      "description": "Monta a massa do vídeo (roteiro, seção 3.3). Rode a pasta inteira de uma vez (Run folder) **pelo menos 30 min antes** da gravação e até 17:30 (horário de Brasília), no mesmo dia: a vaga do Raimundo precisa estar a menos de 5 dias e a consulta da Lúcia ainda precisa ser hoje. Fica recolhida no vídeo. Os blocos 9, 10 e 11 consomem a massa.",
       "item": [
         {
           "name": "P01 Logins (5 papéis)",
@@ -970,7 +970,7 @@
         },
         {
           "name": "P04 Vaga hoje às T−30 min → Antônio aceita",
-          "description": "A vaga começa em 2h30 (entre 2 h e 5 dias ⇒ encaixe, RN-15). Na gravação (T = agora + 3 h) o horário já passou: a falta é aceita (RN-19).",
+          "description": "A vaga começa em 2h30 (entre 2 h e 5 dias ⇒ encaixe, RN-15). O Antônio não aparece no vídeo: ele fica com esta vaga para a oferta seguinte ir só para a Lúcia.",
           "item": [
             {
               "name": "Publicar vaga para daqui a 2h30 (encaixe)",
@@ -1447,7 +1447,7 @@
                       "pm.collectionVariables.set('offerTokenLucia', link[1]);",
                       "const startSp = new Date(new Date(pm.variables.get('slotStartLucia')).getTime() - 3 * 3600 * 1000).toISOString().slice(0, 10);",
                       "const todaySp = new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);",
-                      "pm.test('a consulta da Lúcia é hoje (check-in só vale no dia — prepare entre 07:00 e 15:00)', () => pm.expect(startSp).to.eql(todaySp));"
+                      "pm.test('a consulta da Lúcia é hoje (check-in só vale no dia — prepare até 17:30)', () => pm.expect(startSp).to.eql(todaySp));"
                     ]
                   }
                 }
@@ -4570,7 +4570,7 @@
           ]
         },
         {
-          "name": "04 - Agenda e alocação (no dia)",
+          "name": "04 - Agenda e alocação (check-in)",
           "description": "",
           "item": [
             {
@@ -4622,56 +4622,6 @@
               },
               "id": "e53b3cbd-83cb-58ea-9a3e-283cd22da501",
               "response": []
-            },
-            {
-              "name": "Registrar falta",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "type": "text/javascript",
-                    "exec": [
-                      "pm.test('status 200', () => pm.response.to.have.status(200));",
-                      "pm.test('NO_SHOW', () => pm.expect(pm.response.json().status).to.eql('NO_SHOW'));"
-                    ]
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentAntonioId}}/no-show",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "appointments",
-                    "{{appointmentAntonioId}}",
-                    "no-show"
-                  ]
-                },
-                "description": "Seu Antônio (consulta de hoje, horário já passou — P04). O encaminhamento volta para o regulador (RN-14).",
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{tokenScheduler}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "id": "c2372a26-efe6-5224-8940-6b49d1766756",
-              "response": []
             }
           ]
         },
@@ -4700,7 +4650,7 @@
                     "exec": [
                       "const r = pm.response.json();",
                       "const attempts = Number(pm.variables.get('insightsAttempts') || 0);",
-                      "if (!(r.slots && r.slots.reallocated >= 1 && r.appointments.noShows >= 1 && r.appointments.attended >= 1) && attempts < 10) {",
+                      "if (!(r.slots && r.slots.reallocated >= 1 && r.appointments.attended >= 1) && attempts < 10) {",
                       "  pm.collectionVariables.set('insightsAttempts', String(attempts + 1));",
                       "  postman.setNextRequest(pm.info.requestName);",
                       "  return;",
@@ -4708,7 +4658,7 @@
                       "pm.collectionVariables.set('insightsAttempts', '0');",
                       "pm.test('status 200', () => pm.response.to.have.status(200));",
                       "pm.test('vaga do Raimundo liberada e reaproveitada', () => { pm.expect(r.slots.released).to.be.at.least(1); pm.expect(r.slots.reallocated).to.be.at.least(1); });",
-                      "pm.test('check-in e falta de hoje', () => { pm.expect(r.appointments.attended).to.be.at.least(1); pm.expect(r.appointments.noShows).to.be.at.least(1); });",
+                      "pm.test('check-in de hoje', () => pm.expect(r.appointments.attended).to.be.at.least(1));",
                       "pm.test('fila por classe de risco', () => pm.expect(Object.keys(r.queueSizeByRisk)).to.have.members(['RED','YELLOW','GREEN','BLUE']));"
                     ]
                   }

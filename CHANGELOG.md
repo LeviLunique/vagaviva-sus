@@ -2,6 +2,15 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões em [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.0.2] — 2026-09-27
+
+### Adicionado
+- README com os links dos vídeos do pitch e do MVP e da pasta pública com os materiais da entrega.
+
+### Alterado
+- Coleção de demonstração renomeada para "VagaViva API — Demonstração".
+- Coleção de demonstração sem o registro de falta: a gravação não depende mais de esperar o horário da consulta; o teste de indicadores exige só o check-in do dia.
+
 ## [1.0.1] — 2026-09-26
 
 ### Adicionado

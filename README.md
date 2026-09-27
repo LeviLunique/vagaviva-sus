@@ -18,13 +18,21 @@ API REST para **regulação ambulatorial do SUS** com **confirmação ativa** do
 
 O VagaViva fecha o circuito **agendar → confirmar → reaproveitar** e entrega esses indicadores ao gestor.
 
+## Entrega do hackathon
+
+| Material | Link |
+|---|---|
+| 🎤 Vídeo do pitch | https://youtu.be/7JNa59RifKE |
+| 💻 Vídeo do MVP funcionando | https://youtu.be/Tsk2kWMXgS8 |
+| 📁 Materiais da entrega (vídeos e relatório do projeto) | https://drive.google.com/drive/folders/18PmXFMROTSY2LusZ-vqZyCnVRZ_9HMfa?usp=share_link |
+
 ## Demonstração ao vivo
 
 | | |
 |---|---|
 | API (ambiente de demonstração na AWS) | https://ddueuk9rcxkpp.cloudfront.net |
 | Swagger UI | https://ddueuk9rcxkpp.cloudfront.net/swagger-ui.html |
-| Versão | [v1.0.1](CHANGELOG.md) |
+| Versão | [v1.0.2](CHANGELOG.md) |
 
 - A instância **liga sozinha no primeiro acesso** (página "Iniciando o VagaViva…", 60–90 s) e desliga após 30 min sem uso — é a forma de manter o MVP completo no ar com custo de poucos dólares por mês ([ADR-0014](docs/adr/0014-ambiente-unico-demonstracao.md)).
 - Dados **100% fictícios** (seed de demonstração). As mensagens ao paciente usam o canal *sandbox*: o texto que iria por SMS/WhatsApp fica consultável em `GET /api/v1/dev/sandbox/messages?patientId=…` (ADMIN).
@@ -202,7 +210,7 @@ docker compose up -d --build --wait
 - Relatório JUnit em `target/newman/`.
 
 ### Coleção do vídeo de demonstração
-`postman/vagaviva-demo-video.postman_collection.json` conta a história completa do MVP com personagens fictícios: a pasta **Preparação** monta a massa (pacientes na fila de Cardiologia, consultas de hoje para check-in e falta, uma consulta confirmada que será cancelada) e a pasta **Gravação** percorre o fluxo na ordem do vídeo — cadastro, encaminhamento, regulação com risco, fila PNR-SUS, alocação automática, mensagem com link, confirmação, cancelamento, encaixe em cascata (o primeiro aceite vence, o segundo recebe 409), check-in, falta e indicadores. A preparação depende do relógio: rode-a cerca de 3 h antes, entre 07:00 e 15:00 (Brasília).
+`postman/vagaviva-demo-video.postman_collection.json` conta a história completa do MVP com personagens fictícios: a pasta **Preparação** monta a massa (pacientes na fila de Cardiologia, uma consulta de hoje para check-in, uma consulta confirmada que será cancelada) e a pasta **Gravação** percorre o fluxo na ordem do vídeo — cadastro, encaminhamento, regulação com risco, fila PNR-SUS, alocação automática, mensagem com link, confirmação, cancelamento, encaixe em cascata (o primeiro aceite vence, o segundo recebe 409), check-in e indicadores. A preparação depende do relógio: rode-a pelo menos 30 min antes de gravar, no mesmo dia e até 17:30 (Brasília).
 ```bash
 POSTMAN_COLLECTION=postman/vagaviva-demo-video.postman_collection.json ./scripts/run-postman.sh --folder Preparação
 ```
