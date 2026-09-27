@@ -43,7 +43,11 @@ services:
       JWT_PRIVATE_KEY: $${JWT_PRIVATE_KEY}
       BOOTSTRAP_ADMIN_PASSWORD: $${BOOTSTRAP_ADMIN_PASSWORD}
       DEMO_USERS_PASSWORD: $${DEMO_USERS_PASSWORD}
-      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
+      # F7: traces e métricas OTLP para o coletor ADOT ao lado (X-Ray e CloudWatch, namespace VagaViva).
+      OTEL_EXPORT_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: vagaviva-demo-api
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60 -XX:+ExitOnOutOfMemoryError"
     ports:
       - "80:8080"
     healthcheck:
@@ -59,6 +63,24 @@ services:
         awslogs-group: ${log_group_name}
         awslogs-create-group: "true"
         awslogs-stream: app
+
+  otel-collector:
+    image: ${otel_collector_image}
+    container_name: vagaviva-demo-otel
+    restart: unless-stopped
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - /opt/vagaviva/otel-config.yaml:/etc/otel/config.yaml:ro
+    environment:
+      AWS_REGION: ${region}
+    mem_limit: 256m
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${region}
+        awslogs-group: ${log_group_name}
+        awslogs-create-group: "true"
+        awslogs-stream: otel
 
 volumes:
   pgdata:
