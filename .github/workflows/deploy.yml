@@ -1,0 +1,68 @@
+name: Deploy
+
+# main → demo (ADR-0014, o único ambiente): build ARM64 → ECR (tag = SHA) → liga a EC2 se estiver
+# parada e aplica via SSM (scripts/aws/demo-deploy.sh) → health → Newman. Autenticação por OIDC
+# (sem access keys); infraestrutura continua aplicada com Terraform (scripts/aws/infra.sh).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy (demo)
+    if: vars.AWS_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
+    environment: demo
+    concurrency:
+      group: deploy-demo
+      cancel-in-progress: false
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Credenciais AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-deploy-${{ github.run_id }}
+
+      - name: Login no ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build e push da imagem (arm64/Graviton)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Aplicar no demo (SSM)
+        run: ./scripts/aws/demo-deploy.sh "$IMAGE_TAG"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Testes de API no ambiente (Newman)
+        env:
+          POSTMAN_ENV: demo
+          BASE_URL: ${{ vars.APP_BASE_URL }}
+          BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+          DEMO_USERS_PASSWORD: ${{ secrets.DEMO_USERS_PASSWORD }}
+        run: ./scripts/run-postman.sh

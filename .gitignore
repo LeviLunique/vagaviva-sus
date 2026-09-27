@@ -16,8 +16,8 @@ replay_pid*
 .classpath
 .project
 .settings/
-bin/
-out/
+/bin/
+/out/
 
 # Ambiente e credenciais
 .env
@@ -31,6 +31,7 @@ out/
 *.tfstate
 *.tfstate.*
 *.tfplan
+**/.build/*
 crash.log
 crash.*.log
 override.tf
@@ -47,3 +48,6 @@ Thumbs.db
 
 # Node (Newman via npx)
 node_modules/
+
+# Resultados locais do teste de carga (k6)
+/load/k6/out/

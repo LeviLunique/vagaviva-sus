@@ -1,0 +1,36 @@
+spring:
+  jpa:
+    show-sql: false
+logging:
+  level:
+    root: WARN
+    br.com.vagaviva: INFO
+vagaviva:
+  public-base-url: https://vagaviva.test
+  security:
+    bootstrap-admin:
+      email: admin@vagaviva.test
+      password: Admin@Test2026
+  demo:
+    users-password: Demo@Test2026
+  regulation:
+    # Nos testes o snapshot é chamado explicitamente; o job não dispara sozinho.
+    queue-snapshot-interval: PT1H
+    queue-snapshot-initial-delay: PT1H
+  scheduling:
+    # Nos testes a alocação é chamada explicitamente (ou pelo evento de publicação).
+    allocation-interval: PT1H
+    allocation-initial-delay: PT1H
+    confirmation-deadline-check-interval: PT1H
+    confirmation-deadline-initial-delay: PT1H
+  reallocation:
+    # Nos testes a expiração é chamada explicitamente.
+    offer-expiration-check-interval: PT1H
+    offer-expiration-initial-delay: PT1H
+  insights:
+    queue-gauge-interval: PT1H
+    queue-gauge-initial-delay: PT1H
+  engagement:
+    queue-name: vagaviva-test-notifications
+    reminder-interval: PT1H
+    reminder-initial-delay: PT1H

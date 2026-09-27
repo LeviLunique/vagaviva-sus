@@ -1,0 +1,9 @@
+# Migrations (Flyway)
+
+- Local: `src/main/resources/db/migration`, executadas no startup (`spring.flyway.enabled=true`).
+- Nomenclatura: `V<n>__<descricao_em_snake_case>.sql` (ex.: `V1__create_identity_schema.sql`).
+- Uma migration por mudança de schema; nunca editar uma migration já mergeada em `develop`.
+- Tipos: `uuid` para ids, `timestamptz` para datas, `varchar` com tamanho explícito, `CHECK` para enums.
+- Todo índice criado deve ser justificado por uma consulta (use `EXPLAIN ANALYZE` na revisão).
+- Dados de demonstração ficam em `src/main/resources/db/seed` (`R__seed_demo_*.sql`), incluídos em `spring.flyway.locations` apenas nos perfis `local` e `demo` (este também usado pela homologação, `aws,demo`). Devem ser idempotentes (`ON CONFLICT DO NOTHING`) e só conter dados fictícios.
+- Histórico: `V1` identidade, auditoria e ShedLock (F1) · `V2` catálogo e pacientes (F2) · `V3` regulação, fila e read model da transparência (F3) · `V4` agenda, agendamentos e registro de eventos do Spring Modulith (F4) · `V5` notificações e tokens dos links do paciente (F5) · `V6` ofertas de encaixe e ajuste do índice de notificação por encaminhamento (F6) · `V7` fatos dos indicadores (F7).

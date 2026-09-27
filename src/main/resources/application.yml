@@ -1,0 +1,172 @@
+spring:
+  application:
+    name: vagaviva
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:vagaviva}
+    username: ${DB_USER:vagaviva}
+    password: ${DB_PASSWORD:vagaviva}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  # AWS (SQS/SNS): região do ambiente; credenciais pela cadeia padrão (role da instância/task na AWS).
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:sa-east-1}
+  # Registro de publicação de eventos (outbox): o Flyway é dono do schema; publicações concluídas
+  # são apagadas; as pendentes são reenviadas quando a aplicação reinicia.
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: false
+      completion-mode: DELETE
+      republish-outstanding-events-on-restart: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: framework
+  error:
+    include-stacktrace: never
+  # F8 (OWASP API4): limites de requisição — cabeçalhos até 16 KB; formulários (não usados) até 64 KB.
+  # O corpo JSON é limitado pelo RequestBodyLimitFilter (vagaviva.http.max-request-body).
+  max-http-request-header-size: 16KB
+  tomcat:
+    max-http-form-post-size: 64KB
+    max-swallow-size: 1MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  info:
+    build:
+      enabled: true
+  # RF-36: traces e métricas via OTLP para o sidecar ADOT (X-Ray e CloudWatch, namespace VagaViva).
+  # Exportação só com coletor (ECS hml/prod: OTEL_EXPORT_ENABLED=true); o traceId entra nos logs sempre.
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:0.1}
+    export:
+      enabled: ${OTEL_EXPORT_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTEL_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+        step: 1m
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+vagaviva:
+  time-zone: America/Sao_Paulo
+  http:
+    max-request-body: 256KB
+  # SPEC §10 (LGPD): texto das mensagens 90 dias; trilha de auditoria 5 anos. Execução diária às 03:30.
+  retention:
+    notification-body: P90D
+    audit-events: P5Y
+    cron: "0 30 3 * * *"
+  public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
+  api:
+    version: v1
+  security:
+    jwt:
+      issuer: vagaviva
+      ttl: PT60M
+      # Base64 de um PEM PKCS#8 (obrigatória no perfil aws; local/testes geram um par efêmero)
+      private-key: ${JWT_PRIVATE_KEY:}
+    login:
+      max-attempts: 5
+      lock-duration: PT15M
+    bootstrap-admin:
+      email: ${BOOTSTRAP_ADMIN_EMAIL:admin@vagaviva.local}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+  regulation:
+    queue-snapshot-interval: PT5M
+    throughput-window: P30D
+    max-missed-confirmations: 2
+  scheduling:
+    regular-allocation-min-lead: P5D
+    short-notice-min-lead: PT2H
+    confirmation-deadline-before-start: P3D
+    allocation-interval: PT5M
+    allocation-batch-size: 200
+    confirmation-deadline-check-interval: PT5M
+  # Encaixe em cascata (RN-16/RN-17): lote de 3, até 5 rodadas, resposta em até 4 h.
+  reallocation:
+    offer-batch-size: 3
+    offer-max-rounds: 5
+    offer-response-window: PT4H
+    short-notice-min-lead: ${vagaviva.scheduling.short-notice-min-lead}
+    offer-expiration-check-interval: PT1M
+  # Indicadores (RF-35): custo estimado por mensagem enviada (R$) e atualização do gauge da fila.
+  insights:
+    messaging-cost-brl:
+      SMS: 0.16
+      WHATSAPP: 0.05
+      SANDBOX: 0
+    queue-gauge-interval: PT1M
+  engagement:
+    channel-mode: SANDBOX            # SANDBOX | LIVE
+    sms:
+      enabled: false
+    whatsapp:
+      enabled: false
+      origination-phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+      template-name: vagaviva_aviso
+    queue-name: ${SQS_NOTIFICATIONS_QUEUE:vagaviva-local-notifications}
+    confirmation-reminder-before-deadline: PT24H
+    attendance-reminder-before-start: PT24H
+    reminder-interval: PT10M
+  # Dados de demonstração (RF-11): ligados nos perfis local e demo.
+  demo:
+    enabled: false
+    users-password: ${DEMO_USERS_PASSWORD:}
+
+# Proteção da chamada ao provedor de mensagens (SMS/WhatsApp): retentativa curta com backoff e
+# circuit breaker; a reentrega de longo prazo é da fila SQS (5 recebimentos ⇒ DLQ).
+resilience4j:
+  retry:
+    instances:
+      notification-channel:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+  circuitbreaker:
+    instances:
+      notification-channel:
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s

@@ -1,0 +1,12 @@
+target/
+.git/
+.github/
+.idea/
+.vscode/
+infra/
+postman/
+docs/
+scripts/
+*.md
+.env
+.env.*

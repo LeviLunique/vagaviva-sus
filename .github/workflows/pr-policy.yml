@@ -1,0 +1,74 @@
+name: PR Policy
+
+# Garante o fluxo GitFlow, o padrão Conventional Commits e a política de autoria do projeto:
+# todo commit do PR deve ser de autoria do dono do repositório e sem trailers de co-autoria.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [develop, main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  policy:
+    name: PR policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Fluxo de branches (GitFlow)
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          work='^(feature|bugfix|chore|docs)/[a-z0-9][a-z0-9._-]*$'
+          ship='^(release|hotfix)/[0-9]+\.[0-9]+\.[0-9]+$'
+          case "$BASE_REF" in
+            develop)
+              [[ "$HEAD_REF" =~ $work || "$HEAD_REF" =~ $ship ]] \
+                || { echo "::error::'$HEAD_REF' não pode abrir PR para develop. Use feature/*, bugfix/*, chore/*, docs/* (ou back-merge de release/* e hotfix/*)."; exit 1; } ;;
+            main)
+              [[ "$HEAD_REF" =~ $ship ]] \
+                || { echo "::error::Somente release/x.y.z e hotfix/x.y.z podem abrir PR para main."; exit 1; } ;;
+          esac
+          echo "✔ $HEAD_REF → $BASE_REF"
+
+      - name: Título do PR (Conventional Commits)
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          re='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: .{3,}$'
+          [[ "$TITLE" =~ $re ]] || { echo "::error::Título fora do padrão: '$TITLE'. Ex.: feat(scheduling): adiciona alocação automática de vagas"; exit 1; }
+          echo "✔ $TITLE"
+
+      - name: Autoria e mensagens dos commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPO/pulls/$PR/commits" --paginate \
+            --jq '.[] | [.sha[0:7], (.author.login // "?"), (.committer.login // "?"), (.commit.message | @base64)] | @tsv' > commits.tsv
+          header='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: .{3,}'
+          fail=0
+          while IFS=$'\t' read -r sha author committer msg64; do
+            msg="$(printf '%s' "$msg64" | base64 -d)"
+            first="$(printf '%s\n' "$msg" | head -n1)"
+            if [[ "$author" != "$OWNER" ]]; then
+              echo "::error::$sha autor '$author' não autorizado (somente $OWNER)."; fail=1
+            fi
+            if [[ "$committer" != "$OWNER" && "$committer" != "web-flow" ]]; then
+              echo "::error::$sha committer '$committer' não autorizado."; fail=1
+            fi
+            if printf '%s\n' "$msg" | grep -qiE '^[[:space:]]*co-authored-by[:]'; then
+              echo "::error::$sha contém trailer Co-authored-by (proibido neste repositório)."; fail=1
+            fi
+            if [[ ! "$first" =~ $header && ! "$first" =~ ^Merge\  ]]; then
+              echo "::error::$sha mensagem fora do padrão Conventional Commits: '$first'"; fail=1
+            fi
+          done < commits.tsv
+          [[ $fail -eq 0 ]] && echo "✔ $(wc -l < commits.tsv) commit(s) verificados."
+          exit $fail
