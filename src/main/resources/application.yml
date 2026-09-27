@@ -63,7 +63,7 @@ management:
     build:
       enabled: true
   # RF-36: traces e métricas via OTLP para o sidecar ADOT (X-Ray e CloudWatch, namespace VagaViva).
-  # Exportação só com coletor (ECS hml/prod: OTEL_EXPORT_ENABLED=true); o traceId entra nos logs sempre.
+  # Exportação só com coletor (demo: OTEL_EXPORT_ENABLED=true, amostragem 1.0); o traceId entra nos logs sempre.
   tracing:
     sampling:
       probability: ${TRACING_SAMPLING_PROBABILITY:0.1}

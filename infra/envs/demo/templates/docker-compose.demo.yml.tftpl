@@ -47,6 +47,8 @@ services:
       OTEL_EXPORT_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: vagaviva-demo-api
+      # Demonstração: todo request vira trace no X-Ray (volume baixo; o padrão da aplicação é 10%).
+      TRACING_SAMPLING_PROBABILITY: "1.0"
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60 -XX:+ExitOnOutOfMemoryError"
     ports:
       - "80:8080"
