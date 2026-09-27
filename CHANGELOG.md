@@ -2,7 +2,7 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões em [SemVer](https://semver.org/lang/pt-BR/).
 
-## [Unreleased]
+## [1.0.1] — 2026-09-26
 
 ### Adicionado
 - Coleção Postman do vídeo de demonstração (`postman/vagaviva-demo-video.postman_collection.json`): preparação automatizada da massa e roteiro de gravação.

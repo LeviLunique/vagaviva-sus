@@ -13,7 +13,7 @@
 
     <groupId>br.com.vagaviva</groupId>
     <artifactId>vagaviva-api</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>VagaViva API</name>
     <description>Regulação ambulatorial com confirmação ativa e reaproveitamento automático de vagas do SUS</description>
 
