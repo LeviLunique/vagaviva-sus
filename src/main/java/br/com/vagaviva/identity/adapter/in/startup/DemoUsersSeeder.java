@@ -6,7 +6,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Component;
 
-/** RF-11: nos perfis de demonstração (local e demo/hml), cria os usuários de cada papel no startup. */
+/** RF-11: nos perfis de demonstração (local e demo), cria os usuários de cada papel no startup. */
 @Component
 @ConditionalOnBooleanProperty("vagaviva.demo.enabled")
 class DemoUsersSeeder implements ApplicationRunner {
