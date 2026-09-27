@@ -202,7 +202,7 @@ docker compose up -d --build --wait
 - Relatório JUnit em `target/newman/`.
 
 ### Coleção do vídeo de demonstração
-`postman/vagaviva-demo-video.postman_collection.json` conta a história completa do MVP com personagens fictícios: a pasta **Preparação** monta a massa (pacientes na fila de Cardiologia, consultas de hoje para check-in e falta, uma consulta confirmada que será cancelada) e a pasta **Gravação** percorre o fluxo na ordem do vídeo — cadastro, encaminhamento, regulação com risco, fila PNR-SUS, alocação automática, mensagem com link, confirmação, cancelamento, encaixe em cascata (o primeiro aceite vence, o segundo recebe 409), check-in, falta e indicadores. A preparação depende do relógio: rode-a cerca de 3 h antes, entre 07:00 e 15:00 (Brasília).
+`postman/vagaviva-demo-video.postman_collection.json` conta a história completa do MVP com personagens fictícios: a pasta **Preparação** monta a massa (pacientes na fila de Cardiologia, uma consulta de hoje para check-in, uma consulta confirmada que será cancelada) e a pasta **Gravação** percorre o fluxo na ordem do vídeo — cadastro, encaminhamento, regulação com risco, fila PNR-SUS, alocação automática, mensagem com link, confirmação, cancelamento, encaixe em cascata (o primeiro aceite vence, o segundo recebe 409), check-in e indicadores. A preparação depende do relógio: rode-a pelo menos 30 min antes de gravar, no mesmo dia e até 17:30 (Brasília).
 ```bash
 POSTMAN_COLLECTION=postman/vagaviva-demo-video.postman_collection.json ./scripts/run-postman.sh --folder Preparação
 ```
