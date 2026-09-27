@@ -1,6 +1,6 @@
 # ADR-0003 — Computação em ECS Fargate (ARM64)
 
-- **Status:** Aceita
+- **Status:** Substituída pela ADR-0014 como ambiente provisionado — permanece como desenho de referência para uma implantação real (validado com teste de carga na F8)
 - **Data:** 2026-09-24
 
 ## Contexto

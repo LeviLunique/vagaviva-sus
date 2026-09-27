@@ -1,6 +1,6 @@
 # ADR-0012 — Perfil demo: EC2 única com liga/desliga automático
 
-- **Status:** Aceita
+- **Status:** Aceita — ampliada pela ADR-0014 (o demo passa a ser o único ambiente)
 - **Data:** 2026-09-25
 
 ## Contexto
@@ -19,7 +19,7 @@ Criar um segundo perfil de infraestrutura (`infra/envs/demo`), com arquitetura d
 - Primeiro acesso após ociosidade demora ~60–90 segundos (boot da instância + banco + aplicação).
 - Sem alta disponibilidade: uma única instância, sem failover automático de infraestrutura; recuperação manual em caso de falha da instância (minutos).
 - Escala verticalmente (trocar o tipo da instância), não horizontalmente — adequado para demonstração, não para a carga real projetada no SPEC §11.
-- O desenho de produção (ECS Fargate + RDS Multi-AZ) permanece no repositório, documentado e testado (`infra/stack`, `infra/envs/hml`, `infra/envs/prod`), pronto para ser reaplicado quando o sistema for usado de verdade.
+- (Atualização, ADR-0014) O código do desenho de produção saiu do repositório; o desenho e o teste de carga seguem em `docs/`. Texto original: o desenho de produção (ECS Fargate + RDS Multi-AZ) permanecia no repositório, pronto para ser reaplicado quando o sistema for usado de verdade.
 - O ambiente `hml` foi desprovisionado (`terraform destroy`) depois que o perfil demo foi validado, para eliminar o custo duplicado durante o período de apresentação; a variável `AWS_DEPLOY_ENABLED` do GitHub foi desligada para o pipeline automático de deploy não falhar tentando atualizar um ambiente que não existe mais.
 
 ## Lições da implementação

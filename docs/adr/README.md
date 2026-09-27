@@ -4,7 +4,7 @@
 |---|---|---|
 | [0001](0001-monolito-modular.md) | Monólito modular com Spring Modulith | Aceita |
 | [0002](0002-arquitetura-hexagonal.md) | Arquitetura hexagonal por módulo | Aceita |
-| [0003](0003-ecs-fargate.md) | Computação em ECS Fargate (ARM64) | Aceita |
+| [0003](0003-ecs-fargate.md) | Computação em ECS Fargate (ARM64) | Substituída (ADR-0014) — desenho de referência |
 | [0004](0004-postgresql-outbox.md) | PostgreSQL com outbox transacional | Aceita |
 | [0005](0005-imperativo-virtual-threads.md) | Modelo imperativo com virtual threads | Aceita |
 | [0006](0006-sqs-notificacoes.md) | Amazon SQS para envio de notificações | Aceita |
@@ -15,3 +15,4 @@
 | [0011](0011-gitflow-conventional-commits.md) | GitFlow e Conventional Commits | Aceita |
 | [0012](0012-perfil-demo-ec2-unica.md) | Perfil demo: EC2 única com liga/desliga automático | Aceita |
 | [0013](0013-aceite-de-encaixe-por-update-condicional.md) | Aceite de encaixe por atualização condicional da vaga | Aceita |
+| [0014](0014-ambiente-unico-demonstracao.md) | Ambiente único de demonstração | Aceita |

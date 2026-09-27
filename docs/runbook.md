@@ -1,34 +1,45 @@
 # Runbook de operação
 
-Procedimentos para os ambientes AWS (`sa-east-1`). Pré-requisito: `aws sso login --profile vagaviva-sso` e
-`export AWS_PROFILE=vagaviva-sso AWS_REGION=sa-east-1`. Todos os recursos do projeto usam o prefixo `vagaviva-`
-e a tag `Project=vagaviva` — a conta é compartilhada; **nunca altere recursos sem esse prefixo**.
+O projeto tem um único ambiente, o de **demonstração** (`sa-east-1`, [ADR-0014](adr/0014-ambiente-unico-demonstracao.md)).
+Pré-requisito para os comandos manuais: `aws sso login --profile vagaviva-sso` (os scripts usam esse perfil). Todos os
+recursos do projeto usam o prefixo `vagaviva-` e a tag `Project=vagaviva` — a conta é compartilhada; **nunca altere
+recursos sem esse prefixo**.
+
+| Recurso | Nome |
+|---|---|
+| Instância (API + PostgreSQL + coletor) | EC2 `vagaviva-demo` — contêineres `vagaviva-demo-app`, `vagaviva-demo-db`, `vagaviva-demo-otel` |
+| URL pública | `terraform -chdir=infra/envs/demo output api_base_url` (CloudFront) |
+| Logs | CloudWatch `/ec2/vagaviva-demo` (streams `app`, `db`, `otel`); métricas EMF em `/ec2/vagaviva-demo/metrics` |
+| Painel e alarmes | `vagaviva-demo-operacao`; tópico SNS `vagaviva-demo-alarms` |
+| Segredos | Secrets Manager `vagaviva-demo/app` e `vagaviva-demo/db` |
+| Parâmetros | `/vagaviva/demo/api/image-tag`, `/vagaviva/demo/api/public-base-url`, `/vagaviva/demo/runtime/docker-compose`, `/vagaviva/demo/runtime/otel-config` |
 
 ## 1. Deploy
 
-| Ambiente | Como |
-|---|---|
-| hml | Merge em `develop` ⇒ workflow `Deploy` (quando `AWS_DEPLOY_ENABLED=true`): build ARM64 ⇒ ECR (tag = SHA) ⇒ `deploy-image.sh hml <sha>` ⇒ smoke ⇒ Newman |
-| prod | Tag `vX.Y.Z` em `main` ⇒ workflow `Deploy` no environment `prod` (quando a infra de prod existir) |
-| manual | `./scripts/aws/push-image.sh <sha>` e `./scripts/aws/deploy-image.sh <hml\|prod> <sha>` |
-| demo | `./scripts/aws/push-image.sh <sha>`; `aws ssm put-parameter --name /vagaviva/demo/api/image-tag --value <sha> --overwrite`; na instância (SSM): `/opt/vagaviva/refresh.sh` (ou `./scripts/aws/demo-refresh.sh`) |
+- **Automático (CD):** merge em `main` ⇒ workflow `Deploy` (quando `AWS_DEPLOY_ENABLED=true`): build ARM64 ⇒ ECR (tag =
+  SHA) ⇒ `scripts/aws/demo-deploy.sh` (grava a tag, liga a instância se estiver parada, roda o `refresh.sh` via SSM e
+  espera `UP` pela CloudFront) ⇒ Newman no ambiente. Também pode ser disparado manualmente (*Run workflow*).
+- **Manual:** `./scripts/aws/demo-refresh.sh [sha]` — publica a imagem do commit e segue o mesmo caminho.
+- **Infraestrutura:** `./scripts/aws/infra.sh demo plan|apply`. Mudanças no compose ou no coletor vão para os parâmetros
+  do SSM e entram no próximo `refresh.sh` (deploy ou boot) — a instância não é recriada (o `user_data` é ignorado
+  depois do primeiro boot, para não apagar o banco).
 
-Conferir depois de qualquer deploy: `curl https://<cloudfront>/actuator/health` (`UP`), `flyway_schema_history` com a
-migration nova e `./scripts/run-postman.sh` com `BASE_URL`/`POSTMAN_ENV` do ambiente. **Migration nova só vai para
-ambiente compartilhado depois do merge** (checksum imutável).
+Conferir depois de qualquer deploy: `curl <url>/actuator/health` (`UP`, não a página de "iniciando"),
+`flyway_schema_history` com a migration nova (`./scripts/aws/demo-logs.sh app` ou SSM) e o Newman
+(`BASE_URL=<url> POSTMAN_ENV=demo ./scripts/run-postman.sh` com as senhas do segredo `vagaviva-demo/app`).
+**Migration nova só vai para o demo depois do merge** — o checksum de uma migration aplicada é imutável.
 
 ## 2. Rollback
 
-- **Automático:** o serviço ECS usa *deployment circuit breaker* com `rollback = true` — tasks novas que não ficam
-  saudáveis são substituídas pela revisão anterior sem intervenção.
-- **Manual (código):** `./scripts/aws/deploy-image.sh <env> <sha-anterior>` (as imagens são imutáveis no ECR).
+- **Código:** `./scripts/aws/demo-deploy.sh <sha-anterior>` (as imagens são imutáveis no ECR; a tag anterior está em
+  `git log` da `main` ou no histórico do workflow `Deploy`).
 - **Banco:** migrations são só para frente. Uma migration com problema é corrigida por **outra migration**; em último
-  caso, restaurar o banco (seção 5) e reimplantar a imagem anterior.
+  caso, restaurar o backup (seção 5) e aplicar a imagem anterior.
 
-## 3. Mensagens na DLQ (alarme `vagaviva-<env>-notifications-dlq`)
+## 3. Mensagens na DLQ (alarme `vagaviva-demo-notifications-dlq`)
 
-1. Ver o motivo: `aws logs tail /ecs/vagaviva-<env>/api --since 1h --filter-pattern '"NotificationDeliveryException"'`
-   e `GET /api/v1/notifications?patientId=...` (campo `lastError`, sem dados pessoais).
+1. Ver o motivo: `./scripts/aws/demo-logs.sh app --since 1h | grep NotificationDeliveryException` e
+   `GET /api/v1/notifications?patientId=...` (campo `lastError`, sem dados pessoais).
 2. Corrigido o motivo (provedor fora, número inválido, cota de SMS), devolver as mensagens à fila principal:
    ```bash
    aws sqs start-message-move-task --source-arn <arn-da-dlq> --destination-arn <arn-da-fila>
@@ -37,51 +48,50 @@ ambiente compartilhado depois do merge** (checksum imutável).
 3. O consumidor é idempotente: notificação já `SENT` é ignorada; notificação `FAILED` (5 tentativas) não é reenviada —
    se precisar reenviar, crie o marco de novo pelo fluxo de negócio.
 
-## 4. Pausar e retomar (custo)
+## 4. Ligar, desligar e custo
 
-- `./scripts/aws/pause.sh hml` — tasks = 0 e RDS parado (a AWS religa um RDS parado após 7 dias).
-- `./scripts/aws/resume.sh hml` — retoma.
-- Demo: desliga sozinho após 30 min sem requisições (Lambda `vagaviva-demo-idle-shutdown`) e liga pela página de
-  "iniciando" ao ser acessado; `./scripts/aws/demo-down.sh` / `demo-up.sh` para forçar.
-- Destruir de vez: `./scripts/aws/infra.sh <env> destroy` (prod tem `deletion_protection` no RDS).
+- Liga sozinha no primeiro acesso (página de "iniciando", ~60–90 s) e desliga após 30 min sem requisições na CloudFront
+  (Lambda `vagaviva-demo-idle-shutdown`, com carência de 30 min depois de cada boot).
+- Antes de uma gravação ou apresentação: `./scripts/aws/demo-up.sh` (espera o `UP`). Para desligar já: `demo-down.sh`.
+- A métrica da CloudFront chega com alguns minutos de atraso: depois de um período ocioso longo, a instância pode ser
+  desligada poucos minutos depois de voltar a ser usada; o próximo acesso a religa.
+- Destruir tudo: `./scripts/aws/infra.sh demo destroy` (apaga também o banco de demonstração).
 
-## 5. Restauração do banco (RPO ≤ 5 min, RTO ≤ 1 h — RNF-03)
+## 5. Backup e restauração do banco
 
-- **PITR** (backups automáticos, 14 dias em prod):
-  ```bash
-  aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier vagaviva-prod \
-    --target-db-instance-identifier vagaviva-prod-restore --restore-time 2026-10-01T12:00:00Z \
-    --db-subnet-group-name <subnet-group-do-banco> --vpc-security-group-ids <sg-do-banco> --multi-az
-  ```
-- **Snapshot:** `aws rds restore-db-instance-from-db-snapshot` com os mesmos parâmetros.
-- Depois: apontar a aplicação para o novo endpoint (variável `DB_HOST` da task, via Terraform — `db_identifier` do
-  restaurado) ou renomear as instâncias (`modify-db-instance --new-db-instance-identifier`) e reimplantar;
-  validar com `flyway_schema_history` e o Newman.
-- Demo (PostgreSQL no contêiner): sem PITR — `docker exec vagaviva-demo-db pg_dump` antes de mudanças arriscadas.
+O PostgreSQL roda num contêiner na própria instância (volume `pgdata` no disco EBS criptografado) — sem PITR.
+```bash
+# backup (via SSM Session Manager na instância)
+docker exec vagaviva-demo-db pg_dump -U vagaviva -Fc vagaviva > /tmp/vagaviva-$(date +%F).dump
+# restauração
+docker exec -i vagaviva-demo-db pg_restore -U vagaviva -d vagaviva --clean --if-exists < /tmp/vagaviva-AAAA-MM-DD.dump
+```
+Sem backup, o ambiente se recompõe sozinho a partir de um banco vazio: o Flyway recria o esquema, o seed de demonstração
+recria unidades, especialidades e pacientes fictícios, e os usuários de demonstração são recriados no boot.
 
 ## 6. Rotação de segredos
 
 | Segredo | Onde | Rotação |
 |---|---|---|
-| `JWT_PRIVATE_KEY` | Secrets Manager `vagaviva-<env>/app` | gerar `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \| base64 \| tr -d '\n'`, `aws secretsmanager put-secret-value`, reimplantar (`deploy-image.sh <env> <sha-atual>`). Tokens emitidos com a chave antiga deixam de valer (usuários fazem login de novo; tokens vivem 60 min) |
-| `BOOTSTRAP_ADMIN_PASSWORD`, `DEMO_USERS_PASSWORD` | idem | usados só na criação inicial dos usuários; trocar a senha do usuário pela aplicação e atualizar o segredo |
-| `DB_PASSWORD` | Secrets Manager `vagaviva-<env>/db` | `terraform apply -replace=random_password.db` (atualiza RDS e segredo) e reimplantar para as tasks lerem o novo valor |
-| Credenciais AWS | — | não há chaves de acesso: pipeline por OIDC e operadores por IAM Identity Center (SSO) |
+| `JWT_PRIVATE_KEY` | `vagaviva-demo/app` | gerar `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \| base64 \| tr -d '\n'`, `aws secretsmanager put-secret-value`, reaplicar (`demo-deploy.sh <sha-atual>`). Tokens emitidos com a chave antiga deixam de valer (tokens vivem 60 min) |
+| `BOOTSTRAP_ADMIN_PASSWORD`, `DEMO_USERS_PASSWORD` | `vagaviva-demo/app` | usados na criação dos usuários; trocar também os segredos do Environment `demo` no GitHub (Newman do CD) |
+| `DB_PASSWORD` | `vagaviva-demo/db` | o banco é criado com a senha do segredo no primeiro boot; para trocar, `ALTER USER` no contêiner e atualizar o segredo, depois reaplicar |
+| Credenciais AWS | — | não há chaves de acesso: CD por OIDC (role `vagaviva-gha-deploy-demo`) e operadores por IAM Identity Center (SSO) |
 
 Todo segredo novo ou rotacionado é registrado no arquivo local de registro do operador (fora do repositório).
 
 ## 7. Incidente de segurança / LGPD
 
 1. **Conter:** revogar acesso (desativar usuário `PATCH /users/{id}/status`, rotacionar `JWT_PRIVATE_KEY` para derrubar
-   todos os tokens), bloquear IPs no WAF, pausar o ambiente se preciso.
+   todos os tokens), desligar a instância se preciso (`demo-down.sh`).
 2. **Investigar:** trilha de auditoria (`GET /api/v1/audit-events` por ator, recurso e período — inclui leituras de
-   dados de pacientes e tentativas negadas), logs no CloudWatch por `traceId`, CloudTrail da conta.
-3. **Comunicar:** o **ente (controlador)** comunica a ANPD e os titulares em até **3 dias úteis** quando houver risco ou
-   dano relevante (Res. CD/ANPD 15/2024); o VagaViva (operador) entrega ao controlador, no mesmo prazo, a descrição dos
-   dados afetados, titulares, medidas tomadas e riscos.
-4. **Registrar:** documentar o incidente e as ações (retenção mínima de 5 anos, como a trilha de auditoria).
+   dados de pacientes e tentativas negadas), logs por `traceId` no CloudWatch, traces no X-Ray, CloudTrail da conta.
+3. **Comunicar:** numa implantação real, o **ente (controlador)** comunica a ANPD e os titulares em até **3 dias úteis**
+   quando houver risco ou dano relevante (Res. CD/ANPD 15/2024), com o apoio do operador (descrição dos dados afetados,
+   titulares, medidas tomadas e riscos). O demo só tem dados fictícios.
+4. **Registrar:** documentar o incidente e as ações.
 
-## 8. Consultas úteis (CloudWatch Logs Insights, grupo `/ecs/vagaviva-<env>/api`)
+## 8. Consultas úteis (CloudWatch Logs Insights, grupo `/ec2/vagaviva-demo`)
 
 ```
 fields @timestamp, log.level, message, trace.id
@@ -98,10 +108,6 @@ fields @timestamp, message
 
 | Alarme | Primeira ação |
 |---|---|
-| `api-5xx`, `api-latency-p95` | Logs Insights (ERROR); painel `vagaviva-<env>-operacao` (CPU/memória, banco); rollback se começou após deploy |
-| `api-unhealthy` | `aws ecs describe-services` (eventos); logs de inicialização (migration, segredo ausente) |
-| `ecs-cpu`/`ecs-memory` | conferir autoscaling (máx. `app_max_count`); aumentar máximo ou tamanho da task |
-| `rds-cpu`/`rds-storage` | consultas lentas (Performance Insights); aumentar classe/armazenamento |
-| `notifications-dlq`, `notifications-failed` | seção 3 |
-| `notifications-backlog` | consumidor parado? tasks saudáveis? limites do provedor de SMS? |
-| `allocation-stalled` | há vagas publicadas e fila aguardando? logs do `AllocationJob`/ShedLock (`select * from shedlock`) |
+| `vagaviva-demo-notifications-dlq` | seção 3 |
+| `vagaviva-demo-notifications-failed` | provedor de SMS/WhatsApp fora ou canal mal configurado — logs do `NotificationDispatchService`; no modo `SANDBOX` não deve disparar |
+| API sem resposta | `demo-up.sh`; logs (`demo-logs.sh app`) — migration, segredo ausente, memória; `docker ps` via SSM |

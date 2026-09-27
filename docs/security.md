@@ -8,6 +8,8 @@
 
 ## 2. Controles por ameaça (STRIDE)
 
+> **Ambientes (ADR-0014):** o único ambiente provisionado é o de demonstração, com WAF desligado (custo fixo) e dados só fictícios. Os controles de borda citados abaixo (WAF, ALB interno, RDS) são do desenho para produção real; os controles de aplicação (autenticação, escopo por unidade, limites de requisição, cabeçalhos, auditoria, retenção, logs sem PII) valem igualmente no demo.
+
 | Ameaça | Controles |
 |---|---|
 | Falsificação de identidade | JWT RS256 de curta duração; senhas com BCrypt; bloqueio após tentativas inválidas; links do paciente com token aleatório de 128 bits guardado apenas como hash; respostas genéricas na consulta pública |
@@ -19,7 +21,7 @@
 
 ## 3. Decisões registradas
 - **CSRF desabilitado (`SecurityConfig`)**: a API é *stateless* — autenticação exclusivamente pelo cabeçalho `Authorization: Bearer`, sem cookies nem sessão no servidor. Como o navegador não anexa credenciais automaticamente, não há vetor de CSRF; manter o filtro exigiria tokens CSRF sem benefício. O alerta correspondente da análise estática foi avaliado e dispensado com esta justificativa. Se algum dia houver autenticação por cookie (ex.: front-end com sessão), o CSRF deve ser reativado para essas rotas.
-- **Swagger/OpenAPI desligados em produção**: a documentação interativa só existe em local, homologação e demo (perfil `demo`). Em produção, a raiz da API devolve apenas um índice JSON com o link do health check — nenhum mapa da API exposto na internet.
+- **Swagger/OpenAPI desligados em produção**: a documentação interativa só existe em local e no demo (perfil `demo`). Em produção, a raiz da API devolve apenas um índice JSON com o link do health check — nenhum mapa da API exposto na internet.
 - **Login sem oráculo de contas (F1)**: e-mail inexistente, senha errada, usuário inativo ou bloqueado recebem o mesmo `401 INVALID_CREDENTIALS`, e a senha é verificada com BCrypt em todos os caminhos (contra um hash fictício quando o e-mail não existe) — nem o conteúdo nem o tempo de resposta revelam se a conta existe. Cada tentativa é auditada (`LOGIN_SUCCEEDED`, `LOGIN_FAILED`, `LOGIN_LOCKED`) com o IP de origem, sem registrar o e-mail digitado. A contagem de falhas e a auditoria sobrevivem à resposta de erro (a transação não é desfeita pela exceção de credencial).
 - **Token com dados mínimos**: o JWT leva `sub` (id), papel, unidade e nome — sem e-mail nem outros dados pessoais. A chave RS256 vem do Secrets Manager e é obrigatória no perfil `aws` (a aplicação não sobe sem ela); localmente, sem chave, gera-se um par efêmero. O token vale 60 minutos: desativar um usuário bloqueia novos logins imediatamente, e tokens já emitidos expiram nesse prazo.
 - **Erros 401/403 no mesmo formato**: os filtros de segurança delegam ao `GlobalExceptionHandler`, que responde `application/problem+json` (RFC 9457) com `code` estável e sem detalhes internos.
@@ -45,8 +47,8 @@ Cada item com o controle e onde ele é verificado. Revisão feita na F8 (2026-09
 | Item | Controle | Evidência |
 |---|---|---|
 | A01 Broken Access Control | Negar por padrão; RBAC por papel e **escopo por unidade** (REQUESTER/SCHEDULER só na própria unidade; log de notificações e ofertas só com recurso da própria unidade); links do paciente restritos ao agendamento/oferta do token | `SecurityConfig`, testes 403 em todos os controllers (`*ControllerTest`), `RegulationFlowIT` (REFERRAL_OUT_OF_UNIT), Postman (403 por pasta) |
-| A02 Cryptographic Failures | HTTPS obrigatório na borda (CloudFront redireciona HTTP); da CloudFront ao ALB interno o tráfego segue pela rede privada da AWS (VPC origin, sem exposição à internet) — **pendência:** com o certificado padrão da CloudFront não é possível fixar o protocolo mínimo; em produção, domínio próprio com certificado ACM e política `TLSv1.2_2021`; RDS/SQS/Secrets/S3 criptografados; BCrypt 12; JWT RS256 com chave do Secrets Manager; token do paciente guardado só como SHA-256 | `infra/stack`, `PasswordPolicy`, `JwtKeyConfig`, `PatientActionToken` |
-| A03 Injection | JPA/JDBC sempre com parâmetros (nenhuma SQL concatenada com entrada); Bean Validation; WAF (SQLi, KnownBadInputs, CommonRuleSet) | adaptadores `*PersistenceAdapter`, `edge.tf` |
+| A02 Cryptographic Failures | HTTPS obrigatório na borda (CloudFront redireciona HTTP); da CloudFront à origem (EC2 no demo; ALB interno no desenho de produção) o tráfego segue pela rede privada da AWS (VPC origin, sem exposição à internet) — **pendência:** com o certificado padrão da CloudFront não é possível fixar o protocolo mínimo; em produção, domínio próprio com certificado ACM e política `TLSv1.2_2021`; RDS/SQS/Secrets/S3 criptografados; BCrypt 12; JWT RS256 com chave do Secrets Manager; token do paciente guardado só como SHA-256 | `infra/stack`, `PasswordPolicy`, `JwtKeyConfig`, `PatientActionToken` |
+| A03 Injection | JPA/JDBC sempre com parâmetros (nenhuma SQL concatenada com entrada); Bean Validation; WAF no desenho de produção (SQLi, KnownBadInputs, CommonRuleSet; opcional no demo, `enable_waf`) | adaptadores `*PersistenceAdapter` |
 | A04 Insecure Design | Máquinas de estado explícitas, idempotência (ações do paciente, projeções, consumidor SQS), atualização condicional no aceite de encaixe (ADR-0013), limites de negócio (lote de 200 vagas, página ≤ 100) | `ReferralStatus`/`SlotStatus`, `OfferRaceIT`, `AllocationConcurrencyIT` |
 | A05 Security Misconfiguration | Actuator só `health`/`info`; erros sem stack trace (`problem+json`); Swagger desligado em produção; **F8:** cabeçalhos `Referrer-Policy: no-referrer` (o token do paciente está na URL), `Content-Security-Policy: default-src 'none'`, `Permissions-Policy`, `X-Frame-Options`, `nosniff`, `Cache-Control: no-store`; **CORS fechado explícito** | `SecurityHeadersTest`, `GlobalExceptionHandlerTest` |
 | A06 Vulnerable Components | Trivy em todo PR (falha em CRITICAL; relatório de HIGH) e CodeQL; versões atuais (Java 25, Boot 4.1.1, Modulith 2.1.1) | workflows `ci.yml`/`codeql.yml`, checks obrigatórios do ruleset |
@@ -57,10 +59,10 @@ Cada item com o controle e onde ele é verificado. Revisão feita na F8 (2026-09
 
 **OWASP API Security Top 10 (2023) — itens específicos de API:**
 - **API1 BOLA:** todo recurso por id verifica o escopo do usuário (unidade) ou o token do paciente; ids são UUIDv7 (não sequenciais).
-- **API4 Consumo irrestrito de recursos (F8):** corpo limitado a 256 KB (`RequestBodyLimitFilter`, 413 — inclusive corpo *chunked*), cabeçalhos até 16 KB, páginas ≤ 100, lote ≤ 200 vagas, WAF com limite de taxa (100/5 min por IP nas rotas públicas — **F8: inclui o link curto `/p/`** — e 2.000/5 min global).
+- **API4 Consumo irrestrito de recursos (F8):** corpo limitado a 256 KB (`RequestBodyLimitFilter`, 413 — inclusive corpo *chunked*), cabeçalhos até 16 KB, páginas ≤ 100, lote ≤ 200 vagas, e, no desenho de produção, WAF com limite de taxa (100/5 min por IP nas rotas públicas, incluindo os links do paciente e o link curto `/p/`, e 2.000/5 min global; no demo o WAF é opcional e só tem o limite global).
 - **API5 Autorização por função:** `@PreAuthorize` em cada endpoint administrativo; recursos de demonstração só existem com `vagaviva.demo.enabled`.
 - **API8 Configuração:** ver A05.
 
 **Retenção (F8, SPEC §10):** texto das mensagens apagado após 90 dias (o registro de envio permanece) e trilha de auditoria apagada após 5 anos — jobs diários com ShedLock (`NotificationRetentionJob`, `AuditRetentionJob`), verificados por `RetentionIT`.
 
-**Teste de carga com WAF:** a regra `allowlist-load-test` (prioridade 0) só existe enquanto `TF_VAR_waf_allowlist_cidrs` estiver preenchida no `apply` — usada na F8 para o IP da máquina do teste e removida em seguida.
+**Teste de carga (F8):** executado no desenho de produção recriado temporariamente, com o IP do gerador liberado por uma regra de *allowlist* no WAF só durante o teste ([capacity-planning.md §6](capacity-planning.md)).
