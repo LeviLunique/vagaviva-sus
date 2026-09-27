@@ -18,6 +18,14 @@ API REST para **regulação ambulatorial do SUS** com **confirmação ativa** do
 
 O VagaViva fecha o circuito **agendar → confirmar → reaproveitar** e entrega esses indicadores ao gestor.
 
+## Entrega do hackathon
+
+| Material | Link |
+|---|---|
+| 🎤 Vídeo do pitch | https://youtu.be/7JNa59RifKE |
+| 💻 Vídeo do MVP funcionando | https://youtu.be/Tsk2kWMXgS8 |
+| 📁 Materiais da entrega (vídeos e relatório do projeto) | https://drive.google.com/drive/folders/18PmXFMROTSY2LusZ-vqZyCnVRZ_9HMfa?usp=share_link |
+
 ## Demonstração ao vivo
 
 | | |
