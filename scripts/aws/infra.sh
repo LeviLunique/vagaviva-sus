@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Terraform de um ambiente.   Uso: ./scripts/aws/infra.sh <hml|prod|demo> <plan|apply|destroy|output> [-var k=v ...]
-# Argumentos extras vão para o Terraform (ex.: -var app_cpu=1024 no teste de carga; têm precedência sobre o tfvars).
+# Terraform de um ambiente.   Uso: ./scripts/aws/infra.sh <demo> <plan|apply|destroy|output> [-var k=v ...]
+# Argumentos extras vão para o Terraform (ex.: -var enable_waf=true; têm precedência sobre o tfvars).
 # No primeiro apply, publica a imagem do commit atual no ECR (o serviço precisa de uma imagem).
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
-ENV="${1:?informe o ambiente: hml|prod|demo}"
+ENV="${1:?informe o ambiente: demo}"
 ACTION="${2:-plan}"
 shift $(( $# < 2 ? $# : 2 ))
 STACK="$ROOT_DIR/infra/envs/$ENV"
@@ -23,17 +23,11 @@ case "$ACTION" in
   plan)    terraform -chdir="$STACK" plan -input=false ${EXTRA+"${EXTRA[@]}"} ;;
   apply)   terraform -chdir="$STACK" apply -input=false -auto-approve ${EXTRA+"${EXTRA[@]}"}
            url="$(terraform -chdir="$STACK" output -raw api_base_url)"
-           if [[ "$ENV" == "demo" ]]; then
-             # O perfil demo não passa pela esteira de deploy automática (é ligado/desligado
-             # manualmente) — só preenche o parâmetro que a própria instância lê no boot,
-             # quebrando o ciclo instância -> CloudFront -> instância (ver compute.tf).
-             log "Registrando a URL pública em /$PROJECT/demo/api/public-base-url"
-             aws ssm put-parameter --name "/$PROJECT/demo/api/public-base-url" --value "$url" --type String --overwrite >/dev/null
-           else
-             log "Registrando APP_BASE_URL=$url no environment $ENV do GitHub"
-             gh variable set APP_BASE_URL --env "$ENV" --repo "$GITHUB_REPO" --body "$url"
-             [[ "$ENV" == "hml" ]] && gh variable set AWS_DEPLOY_ENABLED --repo "$GITHUB_REPO" --body true
-           fi
+           # Quebra o ciclo instância -> CloudFront -> instância: a URL pública só existe depois do
+           # primeiro apply; a instância lê este parâmetro a cada boot (ver compute.tf).
+           log "Registrando a URL pública em /$PROJECT/$ENV/api/public-base-url e no environment $ENV do GitHub"
+           aws ssm put-parameter --name "/$PROJECT/$ENV/api/public-base-url" --value "$url" --type String --overwrite >/dev/null
+           gh variable set APP_BASE_URL --env "$ENV" --repo "$GITHUB_REPO" --body "$url" || true
            terraform -chdir="$STACK" output ;;
   destroy) terraform -chdir="$STACK" destroy -input=false ;;
   output)  terraform -chdir="$STACK" output ;;

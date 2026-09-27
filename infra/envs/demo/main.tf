@@ -1,6 +1,8 @@
-# Perfil DEMO: apresentação de baixo custo (pós-graduação/hackathon), não é o design de produção.
+# Ambiente de demonstração — o único ambiente do projeto (ADR-0012 e ADR-0014): apresentação de
+# baixo custo da pós-graduação/hackathon, com todas as funcionalidades do MVP.
 #
-# Diferenças em relação a hml/prod (infra/stack, ECS Fargate + RDS Multi-AZ):
+# Diferenças em relação a uma implantação de produção real (ECS Fargate + RDS Multi-AZ, testada na
+# F8 e documentada em docs/capacity-planning.md):
 #   - Uma única EC2 (t4g.medium) roda a API e o PostgreSQL juntos, via Docker Compose.
 #   - Sem ALB, sem NAT Gateway, sem IP elástico: a CloudFront alcança a instância pela rede
 #     interna da VPC (VPC origin apontando direto para o ARN da instância), sem expor a porta
