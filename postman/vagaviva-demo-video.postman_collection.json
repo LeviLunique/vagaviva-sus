@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "260382e2-56d4-52d9-beb8-ea68099dc2c7",
-    "name": "VagaViva API — gravação",
+    "name": "VagaViva API — Demonstração",
     "description": "Coleção do vídeo de demonstração do MVP: conta a história da Dona Maria (encaminhada, regulada, agendada e confirmada) e o reaproveitamento da vaga que o Seu Raimundo cancelou (encaixe em cascata, primeiro aceite vence).\n\n1. Selecione o ambiente `VagaViva - demo` (ou `VagaViva - local` para ensaiar) e preencha `adminPassword` e `demoPassword` localmente (tipo *secret*; nunca versione).\n2. Rode a pasta **Preparação** cerca de 3 h antes de gravar (entre 07:00 e 15:00, horário de Brasília).\n3. Logo antes de gravar, rode `Preparação › P08`.\n4. Grave executando os requests da pasta **Gravação** na ordem.\n\nPelo Newman: `POSTMAN_COLLECTION=postman/vagaviva-demo-video.postman_collection.json ./scripts/run-postman.sh --folder Preparação` (e, depois, `--folder Gravação`).\n\nTokens, ids e links gerados são variáveis da **coleção**: não crie variáveis com os mesmos nomes no ambiente (as de ambiente têm precedência). Todos os pacientes são fictícios.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
