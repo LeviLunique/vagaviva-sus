@@ -2,6 +2,16 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões em [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Unreleased]
+
+### Adicionado
+- Coleção Postman do vídeo de demonstração (`postman/vagaviva-demo-video.postman_collection.json`): preparação automatizada da massa e roteiro de gravação.
+- `run-postman.sh` aceita outra coleção via `POSTMAN_COLLECTION`.
+- README com a seção de demonstração ao vivo e os números de qualidade da versão.
+
+### Alterado
+- Ambiente de demonstração amostra 100% dos traces (volume baixo; o padrão da aplicação segue 10%).
+
 ## [1.0.0] — 2026-09-26
 
 Primeira versão do MVP: regulação ambulatorial do SUS com confirmação ativa e reaproveitamento automático de vagas.
