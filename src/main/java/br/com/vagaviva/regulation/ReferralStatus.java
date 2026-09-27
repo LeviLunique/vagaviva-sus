@@ -4,7 +4,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Estados do encaminhamento e transições permitidas (SPEC §5.2 — padrão State leve). */
+/** Estados do encaminhamento e transições permitidas (padrão State leve). */
 public enum ReferralStatus {
     PENDING_REGULATION,
     RETURNED,

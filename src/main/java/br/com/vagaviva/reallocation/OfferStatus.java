@@ -1,6 +1,6 @@
 package br.com.vagaviva.reallocation;
 
-/** Estados da oferta de encaixe (SPEC §5). */
+/** Estados da oferta de encaixe. */
 public enum OfferStatus {
     PENDING,
     ACCEPTED,

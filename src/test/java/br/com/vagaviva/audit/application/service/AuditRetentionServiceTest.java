@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class AuditRetentionServiceTest {
 
     @Test
-    @DisplayName("SPEC §10: apaga só o que passou de 5 anos (calendário, com ano bissexto)")
+    @DisplayName("Retenção: apaga só o que passou de 5 anos (calendário, com ano bissexto)")
     void shouldPurgeOlderThanRetention() {
         AuditEventRepository repository = mock(AuditEventRepository.class);
         Clock clock = Clock.fixed(Instant.parse("2031-09-26T12:00:00Z"), ZoneId.of("America/Sao_Paulo"));

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-/** SPEC §10 (LGPD): retenção de 5 anos da auditoria e de 90 dias do texto das mensagens, no banco. */
+/** LGPD: retenção de 5 anos da auditoria e de 90 dias do texto das mensagens, no banco. */
 @IntegrationTest
 class RetentionIT {
 

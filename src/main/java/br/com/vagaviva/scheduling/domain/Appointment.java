@@ -13,7 +13,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/** Agendamento de um paciente da fila em uma vaga (SPEC §5.2). */
+/** Agendamento de um paciente da fila em uma vaga. */
 public final class Appointment {
 
     private final UUID id;

@@ -1,4 +1,4 @@
-// Teste de carga (F8, SPEC §11): mix de leituras e escritas do ciclo de regulação.
+// Teste de carga (F8): mix de leituras e escritas do ciclo de regulação.
 //
 //   docker run --rm -i -v "$PWD/load/k6:/scripts" -e BASE_URL=... -e ADMIN_PASSWORD=... -e DEMO_PASSWORD=... \
 //     -e RATE=100 -e DURATION=3m grafana/k6 run --summary-export=/scripts/out/summary.json /scripts/regulacao.js

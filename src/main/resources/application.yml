@@ -91,7 +91,7 @@ vagaviva:
   time-zone: America/Sao_Paulo
   http:
     max-request-body: 256KB
-  # SPEC §10 (LGPD): texto das mensagens 90 dias; trilha de auditoria 5 anos. Execução diária às 03:30.
+  # LGPD: texto das mensagens 90 dias; trilha de auditoria 5 anos. Execução diária às 03:30.
   retention:
     notification-body: P90D
     audit-events: P5Y

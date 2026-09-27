@@ -87,7 +87,7 @@ O que se perde em relação ao desenho de produção: sem alta disponibilidade (
 
 **Conclusões:**
 - **RNF-01 comprovado** com folga: p95 de ~29 ms no ALB (meta: 300 ms para leitura e 500 ms para escrita) a 300 req/s em uma única task.
-- **~300 req/s por task (SPEC §11) confirmado com sobra**: CPU média de 40% e banco a 33% nesse patamar — a saturação estimada fica acima de 500 req/s por task. Pico nacional de projeto (~1.750 req/s) ≈ 4 tasks a 60% de CPU; o autoscaling (alvo 60%, máximo 10) cobre o dobro disso.
+- **~300 req/s por task (estimativa de projeto) confirmado com sobra**: CPU média de 40% e banco a 33% nesse patamar — a saturação estimada fica acima de 500 req/s por task. Pico nacional de projeto (~1.750 req/s) ≈ 4 tasks a 60% de CPU; o autoscaling (alvo 60%, máximo 10) cobre o dobro disso.
 - **Pool de conexões**: 20 conexões (Hikari) sustentaram 300 req/s com o banco a 33%; com 10 tasks, 200 conexões cabem no `db.t4g.medium` (limite ~400) — acima disso, `db.m7g.large` + réplica de leitura para os indicadores, como previsto.
 - **Banco de produção inicial**: `db.t4g.medium` Multi-AZ mantido para o piloto estadual (< 20 req/s de pico); o cenário nacional exige a troca de classe antes de ~4 tasks sustentadas.
 - Os eventos gerados pelo teste (entrada na fila, mensagens via SQS) foram processados sem acúmulo na fila e sem mensagens na DLQ.
